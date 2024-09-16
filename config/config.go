@@ -2,15 +2,16 @@ package config
 
 import (
 	"os"
+
+	"github.com/Luthor91/Tenshi/models"
 )
 
-var (
-	BotToken  string
-	BotPrefix string
-)
+var AppConfig models.Config
 
-// LoadConfig charge les variables d'environnement nécessaires
+// LoadConfig charge la configuration depuis un fichier JSON
 func LoadConfig() {
-	BotToken = os.Getenv("TOKEN")
-	BotPrefix = os.Getenv("PREFIX")
+	AppConfig = models.Config{
+		BotToken:  os.Getenv("TOKEN"),
+		BotPrefix: os.Getenv("PREFIX"),
+	}
 }

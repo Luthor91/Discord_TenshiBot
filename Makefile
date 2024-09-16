@@ -4,12 +4,20 @@ EXEC := Bot_Tenshi
 setup:
 	cd $(PROJECT_DIR) && go mod tidy
 
-build:
+build_linux:
 	cd $(PROJECT_DIR) && go build -o $(EXEC) main.go
 
-run:
+build_windows:
+	cd $(PROJECT_DIR) && go build -o $(EXEC).exe main.go
+
+run_linux:
 	cd $(PROJECT_DIR) && ./$(EXEC)
 
-all: setup build run
+run_windows:
+	cd $(PROJECT_DIR) && .\$(EXEC)
 
-.PHONY: setup build run all
+lall: setup build_linux run_linux
+
+wall: setup build_windows run_windows
+
+.PHONY: setup build run_linux run_windows lall wall

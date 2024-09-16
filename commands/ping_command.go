@@ -14,7 +14,7 @@ func PingCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	command := fmt.Sprintf("%sping", config.BotPrefix)
+	command := fmt.Sprintf("%sping", config.AppConfig.BotPrefix)
 	// Vérifie si le message commence par "!ping"
 	if m.Content == command {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Pong!")

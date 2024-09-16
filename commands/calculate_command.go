@@ -17,7 +17,7 @@ func CalculateCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Formater la commande avec le préfixe
-	command := fmt.Sprintf("%scalculate", config.BotPrefix)
+	command := fmt.Sprintf("%scalculate", config.AppConfig.BotPrefix)
 
 	// Vérifier si le message commence par la commande
 	if strings.HasPrefix(m.Content, command) {

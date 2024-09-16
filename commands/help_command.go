@@ -14,7 +14,7 @@ func HelpCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	command := fmt.Sprintf("%shelp", config.BotPrefix)
+	command := fmt.Sprintf("%shelp", config.AppConfig.BotPrefix)
 
 	if m.Content == command {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Hello World😃")

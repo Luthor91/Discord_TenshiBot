@@ -14,7 +14,7 @@ func ByeCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	command := fmt.Sprintf("%sbye", config.BotPrefix)
+	command := fmt.Sprintf("%sbye", config.AppConfig.BotPrefix)
 
 	if m.Content == command {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Good Bye👋")

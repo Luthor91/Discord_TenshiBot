@@ -23,11 +23,12 @@ func Run() {
 	discord, err := discordgo.New("Bot " + BotToken)
 	checkErr(err)
 	// Configurer les intents nécessaires
+	/*
 	discord.Identify.Intents = discordgo.IntentsGuildMessages |
 		discordgo.IntentsGuildMembers |
 		discordgo.IntentsGuildMessageReactions
 		// | discordgo.IntentsDirectMessages
-
+*/
 	// Ouvrir la connexion
 	//here
 	err = discord.Open()
