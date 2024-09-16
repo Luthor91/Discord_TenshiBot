@@ -1,0 +1,16 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Make all",
+        "type": "shell",
+        "command": "make all",
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "problemMatcher": [],
+        "detail": "Compile the project using the 'make all' command"
+      }
+    ]
+  }
