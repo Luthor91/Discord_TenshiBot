@@ -26,6 +26,8 @@ func Run() {
 	discord.Identify.Intents = discordgo.IntentsGuildMessages |
 		discordgo.IntentsGuildMembers |
 		discordgo.IntentsGuildMessageReactions
+		// | discordgo.IntentsDirectMessages
+
 	// Ouvrir la connexion
 	//here
 	err = discord.Open()
@@ -59,26 +61,9 @@ func Run() {
 		}
 	}
 
-	// Ajouter un gestionnaire d'événements pour les messages
-	discord.AddHandler(newMessage)
-
 	// Garder le bot en fonctionnement jusqu'à une interruption système (ctrl + C)
 	fmt.Println("Bot running....")
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	<-c
-}
-
-func newMessage(discord *discordgo.Session, message *discordgo.MessageCreate) {
-	// Éviter que le bot réponde à ses propres messages
-	if message.Author.ID == discord.State.User.ID {
-		return
-	}
-
-	// Ajouter de la monnaie à l'utilisateur
-	features.AddMoney(message.Author.ID, 1)
-	features.AddExperience(message.Author.ID, message.Author.Username, 1)
-
-	// Appeler la fonction pour ajuster l'affinité en fonction des mots utilisés
-	features.AdjustAffinity(discord, message)
 }

@@ -1,14 +1,14 @@
 PROJECT_DIR := $(CURDIR)
-EXEC := .\Tenshi.exe
+EXEC := Bot_Tenshi
 
 setup:
 	cd $(PROJECT_DIR) && go mod tidy
 
 build:
-	cd $(PROJECT_DIR) && go build
+	cd $(PROJECT_DIR) && go build -o $(EXEC) main.go
 
 run:
-	cd $(PROJECT_DIR) && $(EXEC)
+	cd $(PROJECT_DIR) && ./$(EXEC)
 
 all: setup build run
 
