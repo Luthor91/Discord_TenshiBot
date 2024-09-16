@@ -5,14 +5,11 @@ import (
 	"log"
 	"os"
 	"sync"
+
+	"github.com/Luthor91/Tenshi/models"
 )
 
-type Experience struct {
-	Username   string `json:"username"`
-	Experience int    `json:"experience"`
-}
-
-var experienceData map[string]Experience
+var experienceData map[string]models.Experience
 var mu_exp sync.Mutex
 
 // LoadExperience charge les informations sur l'expérience depuis experience.json
@@ -23,7 +20,7 @@ func LoadExperience() {
 	data, err := os.ReadFile("../resources/experience.json")
 	if err != nil {
 		log.Printf("Erreur lors du chargement des données d'expérience, création d'un nouveau fichier : %v", err)
-		experienceData = make(map[string]Experience)
+		experienceData = make(map[string]models.Experience)
 		return
 	}
 	err = json.Unmarshal(data, &experienceData)
@@ -57,7 +54,7 @@ func AddExperience(userID string, username string, amount int) {
 		user.Experience += amount
 		experienceData[userID] = user
 	} else {
-		experienceData[userID] = Experience{
+		experienceData[userID] = models.Experience{
 			Username:   username,
 			Experience: amount,
 		}

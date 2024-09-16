@@ -5,15 +5,11 @@ import (
 	"log"
 	"os"
 	"sync"
+
+	"github.com/Luthor91/Tenshi/models"
 )
 
-// User structure pour gérer les utilisateurs
-type User struct {
-	Username string `json:"username"`
-	Affinity int    `json:"affinity"`
-}
-
-var users map[string]User
+var users map[string]models.User
 var mu_users sync.Mutex
 
 // LoadUsers charge les informations sur les utilisateurs depuis users.json
@@ -24,7 +20,7 @@ func LoadUsers() {
 	data, err := os.ReadFile("../resources/users.json")
 	if err != nil {
 		log.Printf("Erreur lors du chargement des utilisateurs, création d'un nouveau fichier : %v", err)
-		users = make(map[string]User)
+		users = make(map[string]models.User)
 		return
 	}
 	err = json.Unmarshal(data, &users)
@@ -55,7 +51,7 @@ func AddUserIfNotExists(userID string, username string) {
 	defer mu_users.Unlock()
 
 	if _, exists := users[userID]; !exists {
-		users[userID] = User{
+		users[userID] = models.User{
 			Username: username,
 			Affinity: 0,
 		}

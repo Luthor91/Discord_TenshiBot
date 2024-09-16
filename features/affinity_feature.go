@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Luthor91/Tenshi/models"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -17,7 +18,7 @@ func AdjustAffinity(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Vérifier si l'utilisateur est déjà dans la base
 	user, exists := users[m.Author.ID]
 	if !exists {
-		user = User{
+		user = models.User{
 			Username: m.Author.Username,
 			Affinity: 0, // Affinité de départ
 		}
@@ -47,7 +48,7 @@ func AdjustAffinity(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 // Récupérer l'affinité d'un utilisateur
-func GetUserAffinity(userID string) (User, bool) {
+func GetUserAffinity(userID string) (models.User, bool) {
 	LoadUsers() // Charger ou recharger les utilisateurs
 
 	user, exists := users[userID]

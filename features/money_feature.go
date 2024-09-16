@@ -6,24 +6,19 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/Luthor91/Tenshi/models"
 )
 
-// Structure pour stocker la monnaie des utilisateurs
-type UserMoney struct {
-	UserID          string    `json:"user_id"`
-	Money           int       `json:"money"`
-	LastDailyReward time.Time `json:"last_daily_reward"` // Ajout du champ pour la récompense quotidienne
-}
-
-var userMoneyMap map[string]UserMoney
+var userMoneyMap map[string]models.UserMoney
 var mu_money sync.Mutex
 
 // LoadMoney charge les informations de monnaie depuis le fichier JSON
 func LoadMoney() {
-	data, err := os.ReadFile("../resources/money.json")
+	data, err := os.ReadFile("resources/money.json")
 	if err != nil {
 		log.Printf("Erreur lors du chargement de money.json: %v", err)
-		userMoneyMap = make(map[string]UserMoney) // Initialiser la map si fichier inexistant
+		userMoneyMap = make(map[string]models.UserMoney) // Initialiser la map si fichier inexistant
 		return
 	}
 	err = json.Unmarshal(data, &userMoneyMap)
@@ -55,7 +50,7 @@ func AddMoney(userID string, amount int) {
 
 	user, exists := userMoneyMap[userID]
 	if !exists {
-		user = UserMoney{
+		user = models.UserMoney{
 			UserID: userID,
 			Money:  0,
 		}
@@ -102,7 +97,7 @@ func GiveDailyMoney(userID string, amount int) {
 
 	user, exists := userMoneyMap[userID]
 	if !exists {
-		user = UserMoney{
+		user = models.UserMoney{
 			UserID: userID,
 			Money:  0,
 		}
