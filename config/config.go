@@ -18,8 +18,9 @@ func LoadConfig() {
 	}
 
 	AppConfig = models.Config{
-		BotToken:  os.Getenv("TOKEN"),
-		BotPrefix: os.Getenv("PREFIX"),
+		BotToken:   os.Getenv("TOKEN"),
+		BotPrefix:  os.Getenv("PREFIX"),
+		RiotAPIKey: os.Getenv("API_RIOT"),
 	}
 }
 
