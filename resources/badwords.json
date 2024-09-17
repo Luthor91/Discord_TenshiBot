@@ -1,8 +1,9 @@
 {
-    "badwords": [
-      "badword1",
-      "badword2",
-      "badword3"
-    ]
-  }
-  
+  "badwords": [
+    "badword1",
+    "badword2",
+    "badword3",
+    "mauvaismot",
+    "non"
+  ]
+}

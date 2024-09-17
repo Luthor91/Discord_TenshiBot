@@ -2,33 +2,59 @@ package commands
 
 import (
 	"fmt"
-	"sort"
+	"strings"
 
+	"github.com/Luthor91/Tenshi/config"
 	"github.com/Luthor91/Tenshi/features"
+	"github.com/Luthor91/Tenshi/models"
 	"github.com/bwmarrin/discordgo"
 )
 
-// Leaderboard affiche le classement des utilisateurs en fonction de leur monnaie
+// LeaderboardCommand affiche le classement des utilisateurs en fonction de la monnaie, affinité et expérience
 func LeaderboardCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// Récupérer la monnaie de tous les utilisateurs
-	users := features.GetAllUsersMoney()
-
-	// Trier les utilisateurs par monnaie décroissante
-	sort.Slice(users, func(i, j int) bool {
-		return users[i].Money > users[j].Money
-	})
-
-	// Construire le message de réponse
-	response := "Classement des utilisateurs :\n"
-	for i, user := range users {
-		// Récupérer le nom d'utilisateur via l'API Discord
-		member, err := s.GuildMember(m.GuildID, user.UserID)
-		if err != nil {
-			response += fmt.Sprintf("%d. Utilisateur %s - %d pièces\n", i+1, user.UserID, user.Money)
-			continue
-		}
-		response += fmt.Sprintf("%d. %s - %d pièces\n", i+1, member.User.Username, user.Money)
+	if m.Author.ID == s.State.User.ID {
+		return
 	}
 
-	s.ChannelMessageSend(m.ChannelID, response)
+	// Formater la commande avec le préfixe
+	command := fmt.Sprintf("%sleaderboard", config.AppConfig.BotPrefix)
+
+	// Vérifier si le message commence par la commande
+	if strings.HasPrefix(m.Content, command) {
+		args := strings.Split(m.Content, " ")
+		category := "general"
+		if len(args) >= 2 {
+			category = args[1]
+		}
+
+		var users []models.User
+
+		// Utiliser les fonctions spécifiques pour chaque catégorie
+		switch category {
+		case "money":
+			users = features.GetUsersByMoney()
+		case "affinity":
+			users = features.GetUsersByAffinity()
+		case "xp":
+			users = features.GetUsersByXP()
+		case "general":
+			users = features.GetUsersByGeneral()
+		default:
+			s.ChannelMessageSend(m.ChannelID, "Type de classement invalide. Choisissez parmi money, affinity, xp, ou general.")
+			return
+		}
+
+		// Construire le message de réponse
+		response := fmt.Sprintf("Classement %s des utilisateurs :\n", category)
+		for i, user := range users {
+			member, err := s.GuildMember(m.GuildID, user.UserID)
+			if err != nil {
+				response += fmt.Sprintf("%d. Utilisateur %s - %d\n", i+1, user.UserID, features.GetUserScore(user, category))
+				continue
+			}
+			response += fmt.Sprintf("%d. %s - %d\n", i+1, member.User.Username, features.GetUserScore(user, category))
+		}
+
+		s.ChannelMessageSend(m.ChannelID, response)
+	}
 }

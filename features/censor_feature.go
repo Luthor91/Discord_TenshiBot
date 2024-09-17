@@ -1,14 +1,11 @@
 package features
 
 import (
-	"fmt"
 	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
-
-var badwords []string
 
 // DeleteBanWordMessages supprime les messages contenant des mots interdits
 func DeleteBanWordMessages(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -24,11 +21,6 @@ func DeleteBanWordMessages(s *discordgo.Session, m *discordgo.MessageCreate) {
 			if err != nil {
 				log.Printf("Erreur lors de la suppression du message contenant un mot interdit: %v", err)
 				return
-			}
-
-			// Informer l'utilisateur si l'option "-v" est activée
-			if strings.Contains(m.Content, "-v") {
-				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Message supprimé : Le message contenait un mot interdit (`%s`)", word))
 			}
 			break
 		}

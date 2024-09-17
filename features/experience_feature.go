@@ -4,70 +4,36 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-	"sync"
-
-	"github.com/Luthor91/Tenshi/models"
 )
 
-var experienceData map[string]models.Experience
-var mu_exp sync.Mutex
-
-// LoadExperience charge les informations sur l'expérience depuis experience.json
+// LoadExperience charge les informations sur l'expérience depuis users.json
 func LoadExperience() {
-	mu_exp.Lock()
-	defer mu_exp.Unlock()
-
-	data, err := os.ReadFile("../resources/experience.json")
+	data, err := os.ReadFile("resources/users.json")
 	if err != nil {
 		log.Printf("Erreur lors du chargement des données d'expérience, création d'un nouveau fichier : %v", err)
-		experienceData = make(map[string]models.Experience)
+		// Si le fichier n'existe pas, créer un fichier vide
 		return
 	}
-	err = json.Unmarshal(data, &experienceData)
+	err = json.Unmarshal(data, &usersMap)
 	if err != nil {
 		log.Fatalf("Erreur lors du parsing des données d'expérience: %v", err)
 	}
 }
 
-// SaveExperience sauvegarde les données d'expérience dans le fichier experience.json
-func SaveExperience() {
-	mu_exp.Lock()
-	defer mu_exp.Unlock()
-
-	data, err := json.MarshalIndent(experienceData, "", "  ")
-	if err != nil {
-		log.Printf("Erreur lors de la sauvegarde des données d'expérience: %v", err)
-		return
-	}
-	err = os.WriteFile("resources/experience.json", data, 0644)
-	if err != nil {
-		log.Printf("Erreur lors de l'écriture des données d'expérience dans le fichier: %v", err)
-	}
-}
-
 // AddExperience ajoute de l'expérience à un utilisateur
-func AddExperience(userID string, username string, amount int) {
-	mu_exp.Lock()
-	defer mu_exp.Unlock()
-
-	if user, exists := experienceData[userID]; exists {
+func AddExperience(userID string, amount int) {
+	if user, exists := usersMap[userID]; exists {
 		user.Experience += amount
-		experienceData[userID] = user
+		usersMap[userID] = user
+		SaveUsers() // Utiliser SaveUsers pour sauvegarder les modifications
 	} else {
-		experienceData[userID] = models.Experience{
-			Username:   username,
-			Experience: amount,
-		}
+		log.Printf("Utilisateur %s non trouvé lors de l'ajout d'expérience", userID)
 	}
-	SaveExperience()
 }
 
 // GetExperience renvoie l'expérience d'un utilisateur
 func GetExperience(userID string) (int, bool) {
-	mu_exp.Lock()
-	defer mu_exp.Unlock()
-
-	if user, exists := experienceData[userID]; exists {
+	if user, exists := usersMap[userID]; exists {
 		return user.Experience, true
 	}
 	return 0, false

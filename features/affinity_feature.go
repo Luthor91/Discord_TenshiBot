@@ -1,7 +1,6 @@
 package features
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/Luthor91/Tenshi/models"
@@ -16,7 +15,7 @@ func AdjustAffinity(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Vérifier si l'utilisateur est déjà dans la base
-	user, exists := users[m.Author.ID]
+	user, exists := usersMap[m.Author.ID]
 	if !exists {
 		user = models.User{
 			Username: m.Author.Username,
@@ -25,11 +24,10 @@ func AdjustAffinity(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Vérifier les mots interdits
-	for _, word := range banwords {
+	for _, word := range badwords {
 		if strings.Contains(strings.ToLower(m.Content), strings.ToLower(word)) {
 			user.Affinity-- // Diminuer l'affinité
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Affinité de %s : %d (mot interdit utilisé)", user.Username, user.Affinity))
-			users[m.Author.ID] = user
+			usersMap[m.Author.ID] = user
 			SaveUsers()
 			return
 		}
@@ -39,8 +37,7 @@ func AdjustAffinity(s *discordgo.Session, m *discordgo.MessageCreate) {
 	for _, word := range goodwords {
 		if strings.Contains(strings.ToLower(m.Content), strings.ToLower(word)) {
 			user.Affinity++ // Augmenter l'affinité
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Affinité de %s : %d (mot positif utilisé)", user.Username, user.Affinity))
-			users[m.Author.ID] = user
+			usersMap[m.Author.ID] = user
 			SaveUsers()
 			return
 		}
@@ -51,6 +48,6 @@ func AdjustAffinity(s *discordgo.Session, m *discordgo.MessageCreate) {
 func GetUserAffinity(userID string) (models.User, bool) {
 	LoadUsers() // Charger ou recharger les utilisateurs
 
-	user, exists := users[userID]
+	user, exists := usersMap[userID]
 	return user, exists
 }

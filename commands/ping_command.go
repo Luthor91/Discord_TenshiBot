@@ -8,7 +8,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// PingCommand envoie "Pong!" quand l'utilisateur tape "!ping"
+// PingCommand renvoie le temps de réponse du bot en millisecondes
 func PingCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
@@ -17,9 +17,11 @@ func PingCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	command := fmt.Sprintf("%sping", config.AppConfig.BotPrefix)
 	// Vérifie si le message commence par "!ping"
 	if m.Content == command {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Pong!")
+		latency := s.HeartbeatLatency().Milliseconds() // Obtenez la latence en millisecondes
+		response := fmt.Sprintf("Pong! Latence : %d ms", latency)
+		_, err := s.ChannelMessageSend(m.ChannelID, response)
 		if err != nil {
-			log.Println("Error sending message:", err)
+			log.Println("Erreur lors de l'envoi du message:", err)
 		}
 	}
 }

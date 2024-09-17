@@ -12,8 +12,8 @@ func NewServerMessage(discord *discordgo.Session, message *discordgo.MessageCrea
 	}
 
 	// Ajouter de la monnaie et de l'expérience à l'utilisateur
-	AddMoney(message.Author.ID, 1)
-	AddExperience(message.Author.ID, message.Author.Username, 1)
+	AddUserIfNotExists(message.Author.ID, message.Author.Username)
+	AddExperience(message.Author.ID, 1)
 	AdjustAffinity(discord, message)
 
 	// Logger le message
