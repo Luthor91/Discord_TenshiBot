@@ -2,6 +2,7 @@ package bot
 
 import (
 	"github.com/Luthor91/Tenshi/commands"
+	"github.com/Luthor91/Tenshi/commands/lol_commands"
 	"github.com/Luthor91/Tenshi/features"
 
 	"github.com/bwmarrin/discordgo"
@@ -25,13 +26,16 @@ func RegisterHandlers(discord *discordgo.Session) {
 	discord.AddHandler(commands.HelpCommand)
 	discord.AddHandler(commands.KickCommand)
 	discord.AddHandler(commands.LeaderboardCommand)
-	discord.AddHandler(commands.LoLEsportCommand)
 	discord.AddHandler(commands.MoneyCommand)
 	discord.AddHandler(commands.PingCommand)
-	discord.AddHandler(commands.PlayerInfoCommand)
+
 	discord.AddHandler(commands.RandomCommand)
 	discord.AddHandler(commands.RankCommand)
 	discord.AddHandler(commands.ReminderCommand)
 	discord.AddHandler(commands.ShopCommand)
 	discord.AddHandler(commands.TimeoutCommand)
+
+	discord.AddHandler(lol_commands.ChampionRotationCommand)
+	discord.AddHandler(lol_commands.SummonerProfileCommand)
+	discord.AddHandler(lol_commands.EsportsMatchesPlannedCommand)
 }

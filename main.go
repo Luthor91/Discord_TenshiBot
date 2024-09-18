@@ -9,6 +9,5 @@ func main() {
 	// Charger la configuration depuis le fichier .env
 	config.LoadConfig()
 	config.CheckConfig()
-
 	bot.Run()
 }
