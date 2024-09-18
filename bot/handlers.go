@@ -36,6 +36,7 @@ func RegisterHandlers(discord *discordgo.Session) {
 	discord.AddHandler(commands.TimeoutCommand)
 
 	discord.AddHandler(lol_commands.ChampionRotationCommand)
-	discord.AddHandler(lol_commands.SummonerProfileCommand)
-	discord.AddHandler(lol_commands.EsportsMatchesPlannedCommand)
+
+	//discord.AddHandler(lol_commands.SummonerProfileCommand)
+	//discord.AddHandler(lol_commands.ChampionInfoCommand)
 }

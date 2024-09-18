@@ -35,33 +35,6 @@ func getStatic(url string, target interface{}) error {
 	return nil
 }
 
-func GetUpcomingEsportMatches() ([]EsportMatch, error) {
-	tournamentCodes, err := GetTournamentStubCodes(nil)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching tournament codes: %v", err)
-	}
-
-	var matches []EsportMatch
-	for _, codeStr := range tournamentCodes {
-		lobbyEvents, err := GetTournamentStubLobbyEvents(codeStr)
-		if err != nil {
-			return nil, fmt.Errorf("error fetching lobby events for tournament code %s: %v", codeStr, err)
-		}
-
-		for _, event := range lobbyEvents {
-			matches = append(matches, EsportMatch{
-				MatchID:   event.ID,
-				StartTime: event.StartTime,
-				Team1:     event.Team1,
-				Team2:     event.Team2,
-				League:    event.League,
-			})
-		}
-	}
-
-	return matches, nil
-}
-
 // GetChampionsNameByIds convertit une liste d'IDs de champions en leurs noms
 func GetChampionsNameByIds(ids []float64) ([]string, error) {
 	// URL pour les données des champions
@@ -97,6 +70,32 @@ func GetChampionsNameByIds(ids []float64) ([]string, error) {
 	return names, nil
 }
 
+// GetChampionNameById convertit un ID de champion en son nom
+func GetChampionNameById(id int) (string, error) {
+	// URL pour les données des champions
+	url := fmt.Sprintf("http://ddragon.leagueoflegends.com/cdn/%s/data/fr_FR/champion.json", config.AppConfig.LoLPatchVersion)
+
+	// Récupération des données des champions
+	var result struct {
+		Data map[string]ChampionData `json:"data"`
+	}
+	err := getStatic(url, &result)
+	if err != nil {
+		return "", err
+	}
+
+	// Recherche du nom du champion correspondant à l'ID
+	championID := strconv.Itoa(id) // Conversion de l'ID en string pour correspondre à la clé des champions
+	for _, champ := range result.Data {
+		if champ.Key == championID {
+			return champ.Name, nil
+		}
+	}
+
+	// Si aucun champion n'a été trouvé pour l'ID donné
+	return "Unknown", nil
+}
+
 // GetSummonerProfile récupère les informations du profil d'un invocateur
 func GetSummonerProfile(name, tag string) (interface{}, error) {
 	// Créer l'URL de la requête pour obtenir le profil d'invocateur
@@ -125,7 +124,7 @@ func GetSummonerProfile(name, tag string) (interface{}, error) {
 	}
 
 	// Décoder la réponse JSON
-	var profile SummonerProfile
+	var profile Summoner
 	err = json.NewDecoder(resp.Body).Decode(&profile)
 	if err != nil {
 		return nil, err

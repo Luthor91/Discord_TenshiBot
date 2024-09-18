@@ -1,7 +1,6 @@
 package riot_games
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -262,109 +261,6 @@ func GetTopChampionMasteriesByPuuid(puuid string) (interface{}, error) {
 	return data, err
 }
 
-// Tournament Stub Codes
-func PostTournamentStubCodes(data interface{}) (interface{}, error) {
-	url := fmt.Sprintf("%s/lol/tournament-stub/v5/codes", config.AppConfig.RiotBaseURL)
-	body, err := json.Marshal(data)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("X-Riot-Token", config.AppConfig.RiotAPIKey)
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := config.AppConfig.Client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed with status %s", resp.Status)
-	}
-
-	var result interface{}
-	return result, json.NewDecoder(resp.Body).Decode(&result)
-}
-
-// Tournament Stub Lobby Events by Code
-func GetTournamentStubLobbyEvents(tournamentCode string) ([]LobbyEvent, error) {
-	url := fmt.Sprintf("%s/lol/tournament-stub/v5/lobby-events/by-code/%s", config.AppConfig.RiotBaseURL, tournamentCode)
-	var data []LobbyEvent
-	err := makeRequest(url, &data)
-	return data, err
-}
-
-// Tournament Stub Codes by Tournament Code
-func GetTournamentStubCodesByCode(tournamentCode string) (interface{}, error) {
-	url := fmt.Sprintf("%s/lol/tournament-stub/v5/codes/%s", config.AppConfig.RiotBaseURL, tournamentCode)
-	var data interface{}
-	err := makeRequest(url, &data)
-	return data, err
-}
-
-// Tournament Stub Providers
-func PostTournamentStubProviders(data interface{}) (interface{}, error) {
-	url := fmt.Sprintf("%s/lol/tournament-stub/v5/providers", config.AppConfig.RiotBaseURL)
-	body, err := json.Marshal(data)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("X-Riot-Token", config.AppConfig.RiotAPIKey)
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := config.AppConfig.Client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed with status %s", resp.Status)
-	}
-
-	var result interface{}
-	return result, json.NewDecoder(resp.Body).Decode(&result)
-}
-
-// Tournament Stub Tournaments
-func PostTournamentStubTournaments(data interface{}) (interface{}, error) {
-	url := fmt.Sprintf("%s/lol/tournament-stub/v5/tournaments", config.AppConfig.RiotBaseURL)
-	body, err := json.Marshal(data)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("X-Riot-Token", config.AppConfig.RiotAPIKey)
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := config.AppConfig.Client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed with status %s", resp.Status)
-	}
-
-	var result interface{}
-	return result, json.NewDecoder(resp.Body).Decode(&result)
-}
-
 // Featured Games
 func GetFeaturedGames() (interface{}, error) {
 	url := fmt.Sprintf("%s/lol/spectator/v5/featured-games", config.AppConfig.RiotBaseURL)
@@ -381,44 +277,15 @@ func GetActiveGamesBySummonerId(encryptedPUUID string) (interface{}, error) {
 	return data, err
 }
 
-// GetTournamentStubCodes récupère les codes de tournoi depuis l'API Riot
-func GetTournamentStubCodes(data interface{}) ([]string, error) {
-	url := fmt.Sprintf("%s/lol/tournament-stub/v5/codes", config.AppConfig.RiotBaseURL)
+// GetChampionData récupère les données des champions depuis l'API de Riot Games
+func GetChampionData() (map[string]ChampionDataExtended, error) {
+	url := fmt.Sprintf("%s/lol/static-data/v3/champions?api_key=%s", config.AppConfig.RiotBaseURL, config.AppConfig.RiotAPIKey)
 
-	// Convertir les données en JSON
-	body, err := json.Marshal(data)
+	var data ChampionDataResponse
+	err := makeRequest(url, &data)
 	if err != nil {
-		return nil, fmt.Errorf("error marshalling data: %v", err)
+		return nil, err
 	}
 
-	// Créer une nouvelle requête POST
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %v", err)
-	}
-
-	// Définir les en-têtes de la requête
-	req.Header.Set("X-Riot-Token", config.AppConfig.RiotAPIKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	// Envoyer la requête
-	resp, err := config.AppConfig.Client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("error sending request: %v", err)
-	}
-	defer resp.Body.Close()
-
-	// Vérifier le statut de la réponse
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed with status %s", resp.Status)
-	}
-
-	// Décoder la réponse JSON
-	var responseData []string
-	err = json.NewDecoder(resp.Body).Decode(&responseData)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding response: %v", err)
-	}
-
-	return responseData, nil
+	return data.Data, nil
 }
