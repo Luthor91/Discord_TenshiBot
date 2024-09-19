@@ -1,6 +1,0 @@
-{
-    "timeout": {
-      "description": "Timeout de 5 minutes",
-      "effect": "apply_timeout"
-    }
-  }
