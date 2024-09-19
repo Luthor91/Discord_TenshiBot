@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/features"
+	"github.com/Luthor91/Tenshi/services"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -34,13 +34,13 @@ func RankCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		switch category {
 		case "money":
-			rank, score, found = features.GetUserRankAndScoreByCategory(userID, "money")
+			rank, score, found = services.GetUserRankAndScoreByCategory(userID, "money")
 		case "affinity":
-			rank, score, found = features.GetUserRankAndScoreByCategory(userID, "affinity")
+			rank, score, found = services.GetUserRankAndScoreByCategory(userID, "affinity")
 		case "xp":
-			rank, score, found = features.GetUserRankAndScoreByCategory(userID, "xp")
+			rank, score, found = services.GetUserRankAndScoreByCategory(userID, "xp")
 		case "general":
-			rank, score, found = features.GetUserRankAndScoreByCategory(userID, "general")
+			rank, score, found = services.GetUserRankAndScoreByCategory(userID, "general")
 		default:
 			s.ChannelMessageSend(m.ChannelID, "Type de classement invalide. Choisissez parmi money, affinity, xp, ou general.")
 			return

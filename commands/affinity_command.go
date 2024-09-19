@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/features"
+	"github.com/Luthor91/Tenshi/services"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -22,7 +22,7 @@ func AffinityCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if strings.HasPrefix(m.Content, command) {
 
 		// Récupérer l'affinité de l'utilisateur
-		user, exists := features.GetUserAffinity(m.Author.ID)
+		user, exists := services.GetUserAffinity(m.Author.ID)
 		if !exists {
 			return
 		}

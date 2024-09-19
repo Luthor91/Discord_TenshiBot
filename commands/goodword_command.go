@@ -5,7 +5,8 @@ import (
 	"strings"
 
 	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/features"
+	"github.com/Luthor91/Tenshi/controllers"
+	"github.com/Luthor91/Tenshi/database"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -25,7 +26,18 @@ func AddGoodWordCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
-		// Ajoute le mot dans la liste des "goodwords"
-		features.AddGoodWord(word)
+		// Crée une instance de WordController
+		wordController := &controllers.WordController{
+			DB: database.DB, // Assurez-vous que vous avez configuré la connexion à la base de données dans la config
+		}
+
+		// Ajoute le mot dans la liste des "badwords"
+		if err := wordController.AddGoodWord(word); err != nil {
+			s.ChannelMessageSend(m.ChannelID, "Erreur lors de l'ajout du mot : "+err.Error())
+			return
+		}
+
+		// Confirme l'ajout du mot
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Le mot \"%s\" a été ajouté à la liste des mots positifs.", word))
 	}
 }

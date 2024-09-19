@@ -6,8 +6,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/features" // Importer le package pour gérer l'affinité
+	"github.com/Luthor91/Tenshi/config" // Importer le package pour gérer l'affinité
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -26,20 +25,18 @@ func Run() {
 		discordgo.IntentsGuildMembers |
 		discordgo.IntentsGuildMessageReactions
 
-	//here
+	// Enregistrer les gestionnaires d'événements
 	RegisterHandlers(discord)
+
+	// Ouvrir la connexion à Discord
 	err = discord.Open()
-	//checkErr(err)
+	checkErr(err)
 
 	defer func() {
 		if err := discord.Close(); err != nil {
 			log.Printf("Erreur lors de la fermeture de la connexion: %v", err)
 		}
 	}()
-
-	// Charger les mots, la monnaie, et les utilisateurs
-	features.LoadWords()
-	features.LoadUsers()
 
 	// Garder le bot en fonctionnement jusqu'à une interruption système (ctrl + C)
 	fmt.Println("Bot running....")

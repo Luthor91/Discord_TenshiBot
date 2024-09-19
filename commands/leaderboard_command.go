@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/features"
 	"github.com/Luthor91/Tenshi/models"
+	"github.com/Luthor91/Tenshi/services"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -32,13 +32,13 @@ func LeaderboardCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Utiliser les fonctions spécifiques pour chaque catégorie
 		switch category {
 		case "money":
-			users = features.GetUsersByMoney()
+			users = services.GetAllUsersByCategory("money")
 		case "affinity":
-			users = features.GetUsersByAffinity()
+			users = services.GetAllUsersByCategory("affinity")
 		case "xp":
-			users = features.GetUsersByXP()
+			users = services.GetAllUsersByCategory("xp")
 		case "general":
-			users = features.GetUsersByGeneral()
+			users = services.GetAllUsersByCategory("general")
 		default:
 			s.ChannelMessageSend(m.ChannelID, "Type de classement invalide. Choisissez parmi money, affinity, xp, ou general.")
 			return
@@ -47,12 +47,13 @@ func LeaderboardCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Construire le message de réponse
 		response := fmt.Sprintf("Classement %s des utilisateurs :\n", category)
 		for i, user := range users {
-			member, err := s.GuildMember(m.GuildID, user.UserID)
+			member, err := s.GuildMember(m.GuildID, user.UserDiscordID)
 			if err != nil {
-				response += fmt.Sprintf("%d. Utilisateur %s - %d\n", i+1, user.UserID, features.GetUserScore(user, category))
+				// Si l'utilisateur n'est pas trouvé dans le serveur, afficher son ID
+				response += fmt.Sprintf("%d. Utilisateur %s - %d\n", i+1, user.UserDiscordID, services.GetUserScore(user, category))
 				continue
 			}
-			response += fmt.Sprintf("%d. %s - %d\n", i+1, member.User.Username, features.GetUserScore(user, category))
+			response += fmt.Sprintf("%d. %s - %d\n", i+1, member.User.Username, services.GetUserScore(user, category))
 		}
 
 		s.ChannelMessageSend(m.ChannelID, response)

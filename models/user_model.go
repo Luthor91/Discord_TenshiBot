@@ -1,17 +1,25 @@
 package models
 
-// User représente un utilisateur avec sa monnaie, expérience et affinité
-type User struct {
-	UserID          string `json:"userid"`
-	Username        string `json:"username"`
-	Affinity        int    `json:"affinity"`
-	Money           int    `json:"money"`
-	Experience      int    `json:"experience"`
-	LastDailyReward string `json:"lastdailyreward"`
-	Rank            int    `json:"rank"`
-	RankMoney       int    `json:"rank_money"`
-	RankExperience  int    `json:"rank_experience"`
-	RankAffinity    int    `json:"rank_affinity"`
-}
+import (
+	"time"
 
-var usersMap map[string]User
+	"gorm.io/gorm"
+)
+
+// User représente un utilisateur avec des articles associés
+type User struct {
+	gorm.Model
+	UserID          uint   `gorm:"primarykey"`
+	UserDiscordID   string `gorm:"uniqueIndex"`
+	Username        string
+	Affinity        int
+	Money           int
+	Experience      int
+	LastDailyReward string
+	Rank            int
+	RankMoney       int
+	RankExperience  int
+	RankAffinity    int
+	Items           []Item `gorm:"foreignKey:UserDiscordID;references:ID"` // Définir la clé étrangère et la clé primaire
+	TimeoutEnd      time.Time
+}

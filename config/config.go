@@ -36,8 +36,18 @@ func LoadConfig() {
 		RiotBaseURL:     fmt.Sprintf("https://%s.api.riotgames.com", os.Getenv("LOL_REGION")),
 		LoLRegion:       os.Getenv("LOL_REGION"),
 		LoLServer:       os.Getenv("LOL_SERVER"),
-		Client:          &http.Client{Timeout: 10 * time.Second},
-		GolioClient:     client,
+
+		DBName:          os.Getenv("DB_NAME"),
+		DBAdminUser:     os.Getenv("DB_ADMIN_USER"),
+		DBAdminPassword: os.Getenv("DB_ADMIN_PASSWORD"),
+		DBHost:          os.Getenv("DB_HOST"),
+		DBPort:          os.Getenv("DB_PORT"),
+		DBSSLMode:       os.Getenv("DB_SSL_MODE"),
+		DBUser:          os.Getenv("DB_USER"),
+		DBPassword:      os.Getenv("DB_PASSWORD"),
+
+		Client:      &http.Client{Timeout: 10 * time.Second},
+		GolioClient: client,
 	}
 
 }

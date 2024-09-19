@@ -3,15 +3,15 @@ package bot
 import (
 	"github.com/Luthor91/Tenshi/commands"
 	"github.com/Luthor91/Tenshi/commands/lol_commands"
-	"github.com/Luthor91/Tenshi/features"
+	"github.com/Luthor91/Tenshi/services"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 // RegisterHandlers enregistre les différentes commandes du bot
 func RegisterHandlers(discord *discordgo.Session) {
-	discord.AddHandler(features.NewPrivateMessage)
-	discord.AddHandler(features.NewServerMessage)
+	discord.AddHandler(services.NewPrivateMessage)
+	discord.AddHandler(services.NewServerMessage)
 
 	discord.AddHandler(commands.AffinityCommand)
 	discord.AddHandler(commands.AddGoodWordCommand)
@@ -34,6 +34,7 @@ func RegisterHandlers(discord *discordgo.Session) {
 	discord.AddHandler(commands.ReminderCommand)
 	discord.AddHandler(commands.ShopCommand)
 	discord.AddHandler(commands.TimeoutCommand)
+	discord.AddHandler(commands.UseItemCommand)
 
 	discord.AddHandler(lol_commands.ChampionRotationCommand)
 

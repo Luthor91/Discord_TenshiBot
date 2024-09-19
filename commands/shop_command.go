@@ -7,19 +7,28 @@ import (
 	"time"
 
 	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/features"
+	"github.com/Luthor91/Tenshi/controllers"
+	"github.com/Luthor91/Tenshi/models"
+	"github.com/Luthor91/Tenshi/services"
 	"github.com/bwmarrin/discordgo"
 )
 
 const (
-	// Identifiants des réactions pour sélectionner les options
-	option1Emoji     = "1️⃣"
-	option2Emoji     = "2️⃣"
-	option3Emoji     = "3️⃣"
-	cooldownDuration = time.Hour // 1 heure de cooldown
+	cooldownDuration = time.Hour       // 1 heure de cooldown pour les options
+	timeoutDuration  = 5 * time.Minute // 5 minutes de timeout
 )
 
-// ShopCommand affiche le magasin avec des options pour dépenser de la money pour de l'xp
+// ShopItem représente un article dans le magasin avec son nom, son prix, son cooldown, et son emoji
+type ShopItem struct {
+	ID       uint
+	Name     string
+	Price    float64
+	Cooldown int
+	Emoji    string // Emoji pour la réaction Discord
+	Action   func(userID string) string
+}
+
+// ShopCommand affiche le magasin avec des options pour dépenser de la money pour de l'XP ou d'autres items
 func ShopCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
@@ -33,59 +42,74 @@ func ShopCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	userID := m.Author.ID
 
-	// Charger les cooldowns depuis le fichier
-	cooldowns, err := features.LoadCooldowns()
-	if err != nil {
-		log.Println("Erreur lors du chargement des cooldowns:", err)
-		return
+	// Récupère les informations de l'utilisateur
+	userMoney, _ := services.GetUserMoney(userID)
+	userXP, _ := services.GetExperience(userID)
+
+	// Options du shop
+	options := []ShopItem{
+		{
+			ID:       1,
+			Name:     "XP Pack 50",
+			Price:    100,
+			Cooldown: int(cooldownDuration.Seconds()),
+			Emoji:    "1️⃣",
+			Action: func(userID string) string {
+				services.AddExperience(userID, 50)
+				services.AddMoney(userID, -100)
+				return "Vous avez acheté 50 XP pour 100 money."
+			},
+		},
+		{
+			ID:       2,
+			Name:     "XP Pack 500",
+			Price:    1000,
+			Cooldown: int(cooldownDuration.Seconds()),
+			Emoji:    "2️⃣",
+			Action: func(userID string) string {
+				services.AddExperience(userID, 500)
+				services.AddMoney(userID, -1000)
+				return "Vous avez acheté 500 XP pour 1000 money."
+			},
+		},
+		{
+			ID:       3,
+			Name:     "XP pour Money",
+			Price:    float64(userMoney) * 0.15,
+			Cooldown: int(cooldownDuration.Seconds()),
+			Emoji:    "3️⃣",
+			Action: func(userID string) string {
+				xpToAdd := int(float64(userXP) * 0.20)
+				cost := float64(userMoney) * 0.15
+				services.AddExperience(userID, xpToAdd)
+				services.AddMoney(userID, -int(cost))
+				return fmt.Sprintf("Vous avez acheté %d XP pour %d money.", xpToAdd, int(cost))
+			},
+		},
+		{
+			ID:       4,
+			Name:     "Timeout",
+			Price:    5000,
+			Cooldown: int(timeoutDuration.Seconds()),
+			Emoji:    "4️⃣",
+			Action: func(userID string) string {
+				services.AddItem(userID, "timeout", 1)
+				services.AddMoney(userID, -5000)
+				return "Vous avez acheté un timeout de 5 minutes pour 5000 money."
+			},
+		},
 	}
 
-	// Vérifier si l'utilisateur a déjà interagi avec le shop
-	userCooldown, exists := cooldowns[userID]
-	if !exists {
-		// L'utilisateur n'a jamais interagi avec le shop, initialiser ses cooldowns
-		userCooldown = features.UserCooldowns{
-			Option1: time.Time{}, // Pas encore utilisé
-			Option2: time.Time{},
-			Option3: time.Time{},
-		}
-		cooldowns[userID] = userCooldown
-
-		// Sauvegarder les cooldowns mis à jour dans le fichier
-		err = features.SaveCooldowns(cooldowns)
-		if err != nil {
-			log.Println("Erreur lors de la sauvegarde des cooldowns:", err)
-			return
-		}
-	}
-
-	// Récupère l'argent et l'expérience de l'utilisateur
-	userMoney := features.GetUserMoney(userID)
-	userXP, _ := features.GetExperience(userID)
-
-	// Options du magasin
-	option1XP := 50             // Nombre d'XP pour l'option 1
-	option1Cost := 100          // Coût en money pour l'option 1
-	option2XP := 500            // Nombre d'XP pour l'option 2
-	option2Cost := 1000         // Coût en money pour l'option 2
-	option3PercentageXP := 20   // Pourcentage de l'XP de l'utilisateur pour l'option 3
-	option3CostPercentage := 15 // Pourcentage du montant de money pour l'option 3
-
-	// Calcul des valeurs pour les options du shop
-	option3XP := int(float64(userXP) * float64(option3PercentageXP) / 100)
-	option3Cost := int(float64(userMoney) * float64(option3CostPercentage) / 100)
-
-	// Prépare le message
+	// Prépare le message du shop
 	messageContent := fmt.Sprintf(
 		"**Bienvenue dans le shop !**\n\n"+
-			"1️⃣ **Acheter %d XP pour %d money**\n"+
-			"2️⃣ **Acheter %d XP pour %d money**\n"+
-			"3️⃣ **Acheter %d XP pour %d money**\n\n"+
+			"1️⃣ **Acheter 50 XP pour 100 money**\n"+
+			"2️⃣ **Acheter 500 XP pour 1000 money**\n"+
+			"3️⃣ **Acheter %d XP pour %d money**\n"+
+			"4️⃣ **Acheter un timeout de 5 minutes pour 5000 money**\n\n"+
 			"Votre solde actuel : %d money\n"+
 			"Votre XP actuel : %d",
-		option1XP, option1Cost,
-		option2XP, option2Cost,
-		option3XP, option3Cost,
+		int(float64(userXP)*0.20), int(float64(userMoney)*0.15),
 		userMoney, userXP,
 	)
 
@@ -97,8 +121,8 @@ func ShopCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Ajouter des réactions au message
-	for _, react := range []string{option1Emoji, option2Emoji, option3Emoji} {
-		err = s.MessageReactionAdd(m.ChannelID, msg.ID, react)
+	for _, option := range options {
+		err = s.MessageReactionAdd(m.ChannelID, msg.ID, option.Emoji)
 		if err != nil {
 			log.Println("Erreur lors de l'ajout de la réaction:", err)
 		}
@@ -110,111 +134,53 @@ func ShopCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
-		// Charger les cooldowns depuis le fichier avant de vérifier le cooldown pour la réaction
-		cooldowns, err := features.LoadCooldowns()
+		// Recharger les cooldowns au cas où ils ont changé
+		cooldowns, err := services.LoadUserShopCooldowns(userID)
 		if err != nil {
-			log.Println("Erreur lors du chargement des cooldowns:", err)
+			log.Println("Erreur lors du rechargement des cooldowns:", err)
 			return
 		}
 
-		userCooldown := cooldowns[userID]
-		now := time.Now()
+		// Trouver l'option correspondant à l'emoji
+		for _, option := range options {
+			if r.Emoji.Name == option.Emoji {
+				// Vérifier le cooldown
+				userCooldown, ok := cooldowns[option.ID]
+				if !ok {
+					userCooldown = models.UserShopCooldown{NextPurchase: time.Time{}}
+				}
+				now := time.Now()
 
-		switch r.Emoji.Name {
-		case option1Emoji:
-			// Vérifie le cooldown pour l'option 1
-			if now.Sub(userCooldown.Option1) < cooldownDuration {
-				remaining := cooldownDuration - now.Sub(userCooldown.Option1)
-				_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("L'option 1 est en cooldown. Temps restant: %s", remaining))
-				if err != nil {
-					log.Println("Erreur lors de l'envoi du message:", err)
+				if now.Sub(userCooldown.NextPurchase) < time.Duration(option.Cooldown)*time.Second {
+					remaining := time.Duration(option.Cooldown)*time.Second - now.Sub(userCooldown.NextPurchase)
+					_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("L'option est en cooldown. Temps restant: %s", remaining))
+					if err != nil {
+						log.Println("Erreur lors de l'envoi du message:", err)
+					}
+					return
+				}
+
+				// Vérifier l'argent et appliquer l'action
+				if userMoney >= int(option.Price) {
+					response := option.Action(userID)
+					_, err := s.ChannelMessageSend(m.ChannelID, response)
+					if err != nil {
+						log.Println("Erreur lors de l'envoi du message:", err)
+					}
+
+					// Mettre à jour le cooldown
+					nextPurchase := time.Now().Add(time.Duration(option.Cooldown) * time.Second)
+					_, err = controllers.UpdateUserShopCooldown(userID, option.ID, nextPurchase)
+					if err != nil {
+						log.Println("Erreur lors de la mise à jour du cooldown:", err)
+					}
+				} else {
+					_, err := s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas assez de money.")
+					if err != nil {
+						log.Println("Erreur lors de l'envoi du message:", err)
+					}
 				}
 				return
-			}
-
-			if userMoney >= option1Cost {
-				features.AddExperience(userID, option1XP)
-				features.AddMoney(userID, -option1Cost)
-				_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous avez acheté %d XP pour %d money.", option1XP, option1Cost))
-				if err != nil {
-					log.Println("Erreur lors de l'envoi du message:", err)
-				}
-				// Met à jour le cooldown pour l'option 1
-				userCooldown.Option1 = time.Now()
-				cooldowns[userID] = userCooldown
-				err = features.SaveCooldowns(cooldowns)
-				if err != nil {
-					log.Println("Erreur lors de la sauvegarde des cooldowns:", err)
-				}
-			} else {
-				_, err := s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas assez de money.")
-				if err != nil {
-					log.Println("Erreur lors de l'envoi du message:", err)
-				}
-			}
-
-		case option2Emoji:
-			// Vérifie le cooldown pour l'option 2
-			if now.Sub(userCooldown.Option2) < cooldownDuration {
-				remaining := cooldownDuration - now.Sub(userCooldown.Option2)
-				_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("L'option 2 est en cooldown. Temps restant: %s", remaining))
-				if err != nil {
-					log.Println("Erreur lors de l'envoi du message:", err)
-				}
-				return
-			}
-
-			if userMoney >= option2Cost {
-				features.AddExperience(userID, option2XP)
-				features.AddMoney(userID, -option2Cost)
-				_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous avez acheté %d XP pour %d money.", option2XP, option2Cost))
-				if err != nil {
-					log.Println("Erreur lors de l'envoi du message:", err)
-				}
-				// Met à jour le cooldown pour l'option 2
-				userCooldown.Option2 = time.Now()
-				cooldowns[userID] = userCooldown
-				err = features.SaveCooldowns(cooldowns)
-				if err != nil {
-					log.Println("Erreur lors de la sauvegarde des cooldowns:", err)
-				}
-			} else {
-				_, err := s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas assez de money.")
-				if err != nil {
-					log.Println("Erreur lors de l'envoi du message:", err)
-				}
-			}
-
-		case option3Emoji:
-			// Vérifie le cooldown pour l'option 3
-			if now.Sub(userCooldown.Option3) < cooldownDuration {
-				remaining := cooldownDuration - now.Sub(userCooldown.Option3)
-				_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("L'option 3 est en cooldown. Temps restant: %s", remaining))
-				if err != nil {
-					log.Println("Erreur lors de l'envoi du message:", err)
-				}
-				return
-			}
-
-			if userMoney >= option3Cost {
-				features.AddExperience(userID, option3XP)
-				features.AddMoney(userID, -option3Cost)
-				_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous avez acheté %d XP pour %d money.", option3XP, option3Cost))
-				if err != nil {
-					log.Println("Erreur lors de l'envoi du message:", err)
-				}
-				// Met à jour le cooldown pour l'option 3
-				userCooldown.Option3 = time.Now()
-				cooldowns[userID] = userCooldown
-				err = features.SaveCooldowns(cooldowns)
-				if err != nil {
-					log.Println("Erreur lors de la sauvegarde des cooldowns:", err)
-				}
-			} else {
-				_, err := s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas assez de money.")
-				if err != nil {
-					log.Println("Erreur lors de l'envoi du message:", err)
-				}
 			}
 		}
 	})

@@ -5,7 +5,8 @@ import (
 	"strings"
 
 	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/features"
+	"github.com/Luthor91/Tenshi/controllers"
+	"github.com/Luthor91/Tenshi/database"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -25,7 +26,17 @@ func AddBadWordCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
+		// Crée une instance de WordController
+		wordController := &controllers.WordController{
+			DB: database.DB, // Assurez-vous que vous avez configuré la connexion à la base de données dans la config
+		}
+
 		// Ajoute le mot dans la liste des "badwords"
-		features.AddBadWord(word)
+		if err := wordController.AddBadWord(word); err != nil {
+			s.ChannelMessageSend(m.ChannelID, "Erreur lors de l'ajout du mot : "+err.Error())
+			return
+		}
+
+		s.ChannelMessageSend(m.ChannelID, "Le mot a été ajouté avec succès.")
 	}
 }

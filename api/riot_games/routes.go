@@ -263,7 +263,7 @@ func GetTopChampionMasteriesByPuuid(puuid string) (interface{}, error) {
 
 // Featured Games
 func GetFeaturedGames() (interface{}, error) {
-	url := fmt.Sprintf("%s/lol/spectator/v5/featured-games", config.AppConfig.RiotBaseURL)
+	url := fmt.Sprintf("%s/lol/spectator/v5/serviced-games", config.AppConfig.RiotBaseURL)
 	var data interface{}
 	err := makeRequest(url, &data)
 	return data, err
