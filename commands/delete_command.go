@@ -23,6 +23,8 @@ func DeleteCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if strings.HasPrefix(m.Content, command) {
 		// Extraire les arguments après la commande (nombre de messages à supprimer)
 		args := strings.Fields(m.Content)
+
+		// Vérifier si l'argument du nombre de messages est présent
 		if len(args) < 2 {
 			s.ChannelMessageSend(m.ChannelID, "Merci de spécifier le nombre de messages à supprimer.")
 			return
@@ -35,11 +37,12 @@ func DeleteCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			args = args[:len(args)-1] // Supprimer le "-v" des arguments
 		}
 
-		// Convertir l'argument en entier
-		numMessages, err := strconv.Atoi(args[1])
-		if err != nil {
+		// Vérifier que le premier argument est un nombre
+		numMessagesStr := args[1]
+		numMessages, err := strconv.Atoi(numMessagesStr)
+		if err != nil || numMessages <= 0 {
 			if verbose {
-				s.ChannelMessageSend(m.ChannelID, "Veuillez entrer un nombre valide de messages à supprimer.")
+				s.ChannelMessageSend(m.ChannelID, "Veuillez entrer un nombre valide de messages à supprimer (doit être supérieur à 0).")
 			}
 			return
 		}
@@ -70,7 +73,7 @@ func DeleteCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			if verbose {
 				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Supprimé %d messages.", numMessages))
 			}
-		} else {
+		} else if len(messageIDs) == 1 {
 			err = s.ChannelMessageDelete(m.ChannelID, messageIDs[0])
 			if err != nil {
 				log.Printf("Erreur lors de la suppression du message: %v", err)

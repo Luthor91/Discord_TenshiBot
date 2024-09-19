@@ -3,6 +3,7 @@ package controllers
 import (
 	"time"
 
+	"github.com/Luthor91/Tenshi/database"
 	"github.com/Luthor91/Tenshi/models"
 	"gorm.io/gorm"
 )
@@ -10,6 +11,13 @@ import (
 // LogController est un contrôleur pour gérer les opérations sur les entrées de journal
 type LogController struct {
 	DB *gorm.DB
+}
+
+// NewLogController crée une nouvelle instance de LogController avec une connexion à la base de données
+func NewLogController() *LogController {
+	return &LogController{
+		DB: database.DB,
+	}
 }
 
 // CreateLog crée une nouvelle entrée de journal

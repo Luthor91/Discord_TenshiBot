@@ -8,7 +8,7 @@ import (
 )
 
 // AddMoney ajoute de la monnaie à un utilisateur donné dans la base de données
-func (service *UserService) AddMoney(userID string, amount int) error {
+func (service *UserService) AddMoney(userDiscordID string, amount int) error {
 	var user models.User
 
 	// Verrouillage pour éviter les accès concurrents
@@ -16,11 +16,11 @@ func (service *UserService) AddMoney(userID string, amount int) error {
 	defer service.mu.Unlock()
 
 	// Rechercher l'utilisateur dans la base de données
-	if err := service.db.Where("user_id = ?", userID).First(&user).Error; err != nil {
+	if err := service.db.Where("user_discord_id = ?", userDiscordID).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			// Si l'utilisateur n'existe pas, le créer
 			user = models.User{
-				UserDiscordID: userID,
+				UserDiscordID: userDiscordID,
 				Money:         amount,
 				Affinity:      0,
 				Experience:    0,
@@ -43,11 +43,11 @@ func (service *UserService) AddMoney(userID string, amount int) error {
 }
 
 // GetUserMoney renvoie la quantité de monnaie d'un utilisateur depuis la base de données
-func (service *UserService) GetUserMoney(userID string) (int, error) {
+func (service *UserService) GetUserMoney(userDicordID string) (int, error) {
 	var user models.User
 
 	// Rechercher l'utilisateur dans la base de données
-	if err := service.db.Where("user_id = ?", userID).First(&user).Error; err != nil {
+	if err := service.db.Where("user_discord_id = ?", userDicordID).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			// Si l'utilisateur n'existe pas, retourner 0
 			return 0, nil
@@ -59,11 +59,11 @@ func (service *UserService) GetUserMoney(userID string) (int, error) {
 }
 
 // CanReceiveDailyReward vérifie si l'utilisateur peut recevoir une récompense quotidienne
-func (service *UserService) CanReceiveDailyReward(userID string) (bool, time.Duration, error) {
+func (service *UserService) CanReceiveDailyReward(userDiscordID string) (bool, time.Duration, error) {
 	var user models.User
 
 	// Rechercher l'utilisateur dans la base de données
-	if err := service.db.Where("user_id = ?", userID).First(&user).Error; err != nil {
+	if err := service.db.Where("user_discord_id = ?", userDiscordID).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			// Si l'utilisateur n'existe pas, il peut recevoir une récompense
 			return true, 0, nil
@@ -86,7 +86,7 @@ func (service *UserService) CanReceiveDailyReward(userID string) (bool, time.Dur
 }
 
 // GiveDailyMoney accorde la récompense quotidienne et met à jour la date de la dernière récompense
-func (service *UserService) GiveDailyMoney(userID string, amount int) error {
+func (service *UserService) GiveDailyMoney(userDiscordID string, amount int) error {
 	var user models.User
 
 	// Verrouiller le mutex pour empêcher les accès concurrents
@@ -94,11 +94,11 @@ func (service *UserService) GiveDailyMoney(userID string, amount int) error {
 	defer service.mu.Unlock()
 
 	// Rechercher l'utilisateur dans la base de données
-	if err := service.db.Where("user_id = ?", userID).First(&user).Error; err != nil {
+	if err := service.db.Where("user_discord_id = ?", userDiscordID).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			// Si l'utilisateur n'existe pas, le créer
 			user = models.User{
-				UserDiscordID:   userID,
+				UserDiscordID:   userDiscordID,
 				Money:           amount,
 				Affinity:        0,
 				Experience:      0,

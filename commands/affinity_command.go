@@ -22,7 +22,7 @@ func AffinityCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if strings.HasPrefix(m.Content, command) {
 
 		// Récupérer l'affinité de l'utilisateur
-		user, exists := services.GetUserAffinity(m.Author.ID)
+		user, exists := services.NewAffinityService(s).GetUserAffinity(m.Author.ID)
 		if !exists {
 			return
 		}

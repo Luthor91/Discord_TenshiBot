@@ -5,6 +5,7 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/Luthor91/Tenshi/database"
 	"github.com/Luthor91/Tenshi/models"
 	"gorm.io/gorm"
 )
@@ -16,9 +17,9 @@ type UserService struct {
 }
 
 // NewUserService crée une nouvelle instance de UserService
-func NewUserService(db *gorm.DB) *UserService {
+func NewUserService() *UserService {
 	return &UserService{
-		db: db,
+		db: database.DB,
 	}
 }
 
@@ -124,7 +125,7 @@ func (service *UserService) GetUserScore(user models.User, category string) int 
 // AddUserIfNotExists ajoute un utilisateur à la base de données s'il n'existe pas déjà
 func (service *UserService) AddUserIfNotExists(userID, username string) error {
 	var user models.User
-	if err := service.db.Where("user_id = ?", userID).First(&user).Error; err != nil {
+	if err := service.db.Where("user_discord_id = ?", userID).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			newUser := models.User{
 				UserDiscordID: userID,

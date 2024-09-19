@@ -20,7 +20,7 @@ func ExperienceCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Vérifier si le message commence par la commande
 	if strings.HasPrefix(m.Content, command) {
-		exp, exists := services.GetExperience(m.Author.ID)
+		exp, exists := services.NewExperienceService().GetExperience(m.Author.ID)
 		if !exists {
 			s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas encore gagné d'expérience.")
 			return

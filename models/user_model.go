@@ -9,8 +9,7 @@ import (
 // User représente un utilisateur avec des articles associés
 type User struct {
 	gorm.Model
-	UserID          uint   `gorm:"primarykey"`
-	UserDiscordID   string `gorm:"uniqueIndex"`
+	UserDiscordID   string `gorm:"uniqueIndex"` // Index unique
 	Username        string
 	Affinity        int
 	Money           int
@@ -20,6 +19,6 @@ type User struct {
 	RankMoney       int
 	RankExperience  int
 	RankAffinity    int
-	Items           []Item `gorm:"foreignKey:UserDiscordID;references:ID"` // Définir la clé étrangère et la clé primaire
+	Items           []Item `gorm:"foreignKey:UserDiscordID;references:UserDiscordID"` // Référencer la bonne colonne
 	TimeoutEnd      time.Time
 }

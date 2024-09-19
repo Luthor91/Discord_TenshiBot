@@ -8,6 +8,7 @@ import (
 	"github.com/Luthor91/Tenshi/controllers"
 	"github.com/Luthor91/Tenshi/database"
 	"github.com/Luthor91/Tenshi/models"
+	"gorm.io/gorm"
 )
 
 // ItemService est un service pour gérer les items des utilisateurs
@@ -24,32 +25,31 @@ func NewItemService() *ItemService {
 
 // AddItem ajoute un item à l'inventaire de l'utilisateur
 func (service *ItemService) AddItem(userID string, itemName string, quantity int) error {
-	user, err := service.userCtrl.GetUserByDiscordID(userID)
-	if err != nil {
-		return err
+	item := models.Item{
+		Name:          itemName,
+		Quantity:      quantity,
+		UserDiscordID: userID,
 	}
 
-	// Trouver l'item dans l'inventaire de l'utilisateur
-	itemIndex := -1
-	for i, item := range user.Items {
-		if item.Name == itemName {
-			itemIndex = i
-			user.Items[i].Quantity += quantity
-			break
+	// Vérifier si l'item existe déjà pour cet utilisateur
+	var existingItem models.Item
+	result := database.DB.Where("user_discord_id = ? AND name = ?", userID, itemName).First(&existingItem)
+
+	if result.Error == nil {
+		// L'item existe déjà, augmenter la quantité
+		existingItem.Quantity += quantity
+		err := database.DB.Save(&existingItem).Error
+		if err != nil {
+			return err
 		}
+		log.Printf("Ajouté %d %s à l'utilisateur %s", quantity, itemName, userID)
+		return nil
+	} else if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return result.Error
 	}
 
-	// Si l'item n'existe pas, l'ajouter à l'inventaire
-	if itemIndex == -1 {
-		newItem := models.Item{
-			Name:     itemName,
-			Quantity: quantity,
-		}
-		user.Items = append(user.Items, newItem)
-	}
-
-	// Mettre à jour l'utilisateur dans la base de données
-	err = service.userCtrl.SaveUser(user)
+	// Si l'item n'existe pas, l'ajouter à la base de données
+	err := database.DB.Create(&item).Error
 	if err != nil {
 		return err
 	}
@@ -58,21 +58,27 @@ func (service *ItemService) AddItem(userID string, itemName string, quantity int
 	return nil
 }
 
+// GetUserItems récupère les items d'un utilisateur
+func (service *ItemService) GetUserItems(userID string) ([]models.Item, error) {
+	var items []models.Item
+	result := database.DB.Where("user_discord_id = ?", userID).Find(&items)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return items, nil
+}
+
 // HasItem vérifie si l'utilisateur possède suffisamment de l'item spécifié
 func (service *ItemService) HasItem(userID string, itemName string, quantity int) (bool, error) {
-	user, err := service.userCtrl.GetUserByDiscordID(userID)
-	if err != nil {
-		return false, err
+	var item models.Item
+	result := database.DB.Where("user_discord_id = ? AND name = ?", userID, itemName).First(&item)
+	if result.Error != nil {
+		return false, result.Error
 	}
 
 	// Vérifier si l'utilisateur a l'item et la quantité nécessaire
-	for _, item := range user.Items {
-		if item.Name == itemName && item.Quantity >= quantity {
-			return true, nil
-		}
-	}
-
-	return false, nil
+	return item.Quantity >= quantity, nil
 }
 
 // UseItem applique un item à un autre utilisateur

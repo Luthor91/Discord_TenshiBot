@@ -31,19 +31,15 @@ func (service *MessageService) NewServerMessage(discord *discordgo.Session, mess
 
 	// Ajouter de la monnaie et de l'expérience à l'utilisateur
 	if err := service.userService.AddUserIfNotExists(message.Author.ID, message.Author.Username); err != nil {
-		// Gérer l'erreur si nécessaire
 		return
 	}
 	if err := service.experienceService.AddExperience(message.Author.ID, 1); err != nil {
-		// Gérer l'erreur si nécessaire
 		return
 	}
 
 	service.affinityService.AdjustAffinity(message)
 
-	// Logger le message
 	if err := service.logService.LogMessage(discord, message); err != nil {
-		// Gérer l'erreur si nécessaire
 		return
 	}
 }

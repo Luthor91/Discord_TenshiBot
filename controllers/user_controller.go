@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"errors"
+
 	"github.com/Luthor91/Tenshi/database"
 	"github.com/Luthor91/Tenshi/models"
 	"gorm.io/gorm"
@@ -11,27 +13,55 @@ type UserController struct {
 	DB *gorm.DB
 }
 
-// GetUserIDByDiscordID récupère l'identifiant interne de l'utilisateur en utilisant son ID Discord
-func GetUserIDByDiscordID(discordID string) (uint, error) {
+// NewUserController crée une nouvelle instance de UserController avec une connexion à la base de données
+func NewUserController() *UserController {
+	return &UserController{
+		DB: database.DB,
+	}
+}
+
+// UserExistsByID vérifie si un utilisateur existe en utilisant son ID
+func (controller *UserController) UserExistsByID(userID uint) (bool, error) {
 	var user models.User
-	if err := database.DB.First(&user, "user_id = ?", discordID).Error; err != nil {
+	result := controller.DB.First(&user, userID)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return false, nil // L'utilisateur n'existe pas
+	}
+	return true, result.Error // L'utilisateur existe
+}
+
+func (controller *UserController) UserExistsByDiscordID(userDiscordID string) (bool, error) {
+	var user models.User
+	result := controller.DB.Where("user_discord_id = ?", userDiscordID).First(&user)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return false, nil // L'utilisateur n'existe pas
+	}
+	return true, result.Error // L'utilisateur existe
+}
+
+// GetUserIDByDiscordID récupère l'identifiant interne de l'utilisateur en utilisant son ID Discord
+func (ctrl *UserController) GetUserIDByDiscordID(discordID string) (uint, error) {
+	var user models.User
+	if err := ctrl.DB.First(&user, "user_id = ?", discordID).Error; err != nil {
 		return 0, err
 	}
 	return user.ID, nil
 }
 
 // GetUserDiscordIDByID récupère l'ID Discord de l'utilisateur en utilisant son identifiant interne
-func GetUserDiscordIDByID(userID uint) (string, error) {
+func (ctrl *UserController) GetUserDiscordIDByID(userID uint) (string, error) {
 	var user models.User
-	if err := database.DB.First(&user, "id = ?", userID).Error; err != nil {
+	if err := ctrl.DB.First(&user, "id = ?", userID).Error; err != nil {
 		return "", err
 	}
 	return user.UserDiscordID, nil
 }
 
 // UpdateUser met à jour les informations d'un utilisateur dans la base de données
-func UpdateUser(userID string, updatedUser models.User) bool {
-	result := database.DB.Model(&models.User{}).Where("user_id = ?", userID).Updates(updatedUser)
+func (ctrl *UserController) UpdateUser(updatedUser models.User) bool {
+	result := ctrl.DB.Model(&models.User{}).Where("user_id = ?", updatedUser.UserDiscordID).Updates(updatedUser)
 	return result.RowsAffected > 0
 }
 
@@ -55,16 +85,16 @@ func (ctrl *UserController) CreateUser(userID, username string, affinity, money,
 	return &user, nil
 }
 
-// GetUser récupère un utilisateur par ID
-func (ctrl *UserController) GetUserByDiscordID(userID string) (*models.User, error) {
+// GetUserByDiscordID récupère un utilisateur par son ID Discord
+func (ctrl *UserController) GetUserByDiscordID(userDiscordID string) (*models.User, error) {
 	var user models.User
-	if err := ctrl.DB.First(&user, "user_id = ?", userID).Error; err != nil {
+	if err := ctrl.DB.First(&user, "user_discord_id = ?", userDiscordID).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
 }
 
-// GetUser récupère un utilisateur par ID
+// GetUserByID récupère un utilisateur par son identifiant interne
 func (ctrl *UserController) GetUserByID(userID uint) (*models.User, error) {
 	var user models.User
 	if err := ctrl.DB.First(&user, "id = ?", userID).Error; err != nil {
@@ -73,30 +103,8 @@ func (ctrl *UserController) GetUserByID(userID uint) (*models.User, error) {
 	return &user, nil
 }
 
-// UpdateUser met à jour un utilisateur
-func (ctrl *UserController) UpdateUser(userID string, username string, affinity, money, experience int, lastDailyReward string, rank, rankMoney, rankExperience, rankAffinity int) (*models.User, error) {
-	var user models.User
-	if err := ctrl.DB.First(&user, "user_id = ?", userID).Error; err != nil {
-		return nil, err
-	}
-	user.Username = username
-	user.Affinity = affinity
-	user.Money = money
-	user.Experience = experience
-	user.LastDailyReward = lastDailyReward
-	user.Rank = rank
-	user.RankMoney = rankMoney
-	user.RankExperience = rankExperience
-	user.RankAffinity = rankAffinity
-	if err := ctrl.DB.Save(&user).Error; err != nil {
-		return nil, err
-	}
-	return &user, nil
-}
-
 // SaveUser met à jour ou insère un utilisateur dans la base de données
 func (ctrl *UserController) SaveUser(user *models.User) error {
-	// Cherche si l'utilisateur existe déjà dans la base de données
 	var existingUser models.User
 	if err := ctrl.DB.First(&existingUser, "user_id = ?", user.UserDiscordID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -105,11 +113,10 @@ func (ctrl *UserController) SaveUser(user *models.User) error {
 				return err
 			}
 		} else {
-			// Autre erreur lors de la recherche de l'utilisateur
 			return err
 		}
 	} else {
-		// Met à jour les champs de l'utilisateur existant
+		// Mettre à jour l'utilisateur existant
 		existingUser.Username = user.Username
 		existingUser.Affinity = user.Affinity
 		existingUser.Money = user.Money
@@ -120,12 +127,11 @@ func (ctrl *UserController) SaveUser(user *models.User) error {
 		existingUser.RankExperience = user.RankExperience
 		existingUser.RankAffinity = user.RankAffinity
 
-		// Sauvegarde les modifications
+		// Sauvegarder les modifications
 		if err := ctrl.DB.Save(&existingUser).Error; err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 

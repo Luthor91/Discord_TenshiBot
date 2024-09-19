@@ -8,5 +8,6 @@ type ShopItem struct {
 	ID       uint    `gorm:"primaryKey"`
 	Name     string  `gorm:"unique;not null"`
 	Price    float64 `gorm:"not null"`
+	Emoji    string  `gorm:"unique;not null"`
 	Cooldown int     `gorm:"not null"`
 }

@@ -17,7 +17,7 @@ func MoneyCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	command := fmt.Sprintf("%smoney", config.AppConfig.BotPrefix)
 
 	if m.Content == command {
-		money, err := services.GetUserMoney(m.Author.ID)
+		money, err := services.NewUserService().GetUserMoney(m.Author.ID)
 		if err != nil {
 			return
 		}

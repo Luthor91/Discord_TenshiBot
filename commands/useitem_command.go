@@ -48,7 +48,7 @@ func UseItemCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	targetID = strings.TrimSuffix(targetID, ">")
 
 	// Vérifier si l'utilisateur émetteur possède l'item
-	hasItem, err := services.HasItem(m.Author.ID, itemName, quantity)
+	hasItem, err := services.NewItemService().HasItem(m.Author.ID, itemName, quantity)
 	if err != nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Erreur lors de la vérification de l'item.")
 		if err != nil {
@@ -65,7 +65,7 @@ func UseItemCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Utiliser l'item
-	err = services.UseItem(m.Author.ID, targetID, itemName, quantity)
+	err = services.NewItemService().UseItem(m.Author.ID, targetID, itemName, quantity)
 	if err != nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Erreur lors de l'utilisation de l'item.")
 		if err != nil {

@@ -32,13 +32,13 @@ func LeaderboardCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Utiliser les fonctions spécifiques pour chaque catégorie
 		switch category {
 		case "money":
-			users = services.GetAllUsersByCategory("money")
+			users, _ = services.NewUserService().GetAllUsersByCategory("money")
 		case "affinity":
-			users = services.GetAllUsersByCategory("affinity")
+			users, _ = services.NewUserService().GetAllUsersByCategory("affinity")
 		case "xp":
-			users = services.GetAllUsersByCategory("xp")
+			users, _ = services.NewUserService().GetAllUsersByCategory("xp")
 		case "general":
-			users = services.GetAllUsersByCategory("general")
+			users, _ = services.NewUserService().GetAllUsersByCategory("general")
 		default:
 			s.ChannelMessageSend(m.ChannelID, "Type de classement invalide. Choisissez parmi money, affinity, xp, ou general.")
 			return
@@ -50,10 +50,10 @@ func LeaderboardCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			member, err := s.GuildMember(m.GuildID, user.UserDiscordID)
 			if err != nil {
 				// Si l'utilisateur n'est pas trouvé dans le serveur, afficher son ID
-				response += fmt.Sprintf("%d. Utilisateur %s - %d\n", i+1, user.UserDiscordID, services.GetUserScore(user, category))
+				response += fmt.Sprintf("%d. Utilisateur %s - %d\n", i+1, user.UserDiscordID, services.NewUserService().GetUserScore(user, category))
 				continue
 			}
-			response += fmt.Sprintf("%d. %s - %d\n", i+1, member.User.Username, services.GetUserScore(user, category))
+			response += fmt.Sprintf("%d. %s - %d\n", i+1, member.User.Username, services.NewUserService().GetUserScore(user, category))
 		}
 
 		s.ChannelMessageSend(m.ChannelID, response)

@@ -26,7 +26,7 @@ func DailyMoneyCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		rand.Seed(time.Now().UnixNano())
 
 		// Vérifier si l'utilisateur peut recevoir la récompense quotidienne
-		canReceive, timeLeft, err := services.CanReceiveDailyReward(m.Author.ID)
+		canReceive, timeLeft, err := services.NewUserService().CanReceiveDailyReward(m.Author.ID)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Erreur lors de la vérification de la récompense quotidienne : "+err.Error())
 			return
@@ -41,7 +41,7 @@ func DailyMoneyCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		randomAmount := rand.Intn(91) + 10
 
 		// Donner la récompense à l'utilisateur
-		if err := services.GiveDailyMoney(m.Author.ID, randomAmount); err != nil {
+		if err := services.NewUserService().GiveDailyMoney(m.Author.ID, randomAmount); err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Erreur lors de l'attribution de la récompense : "+err.Error())
 			return
 		}

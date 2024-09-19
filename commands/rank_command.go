@@ -34,13 +34,13 @@ func RankCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		switch category {
 		case "money":
-			rank, score, found = services.GetUserRankAndScoreByCategory(userID, "money")
+			rank, score, found, _ = services.NewUserService().GetUserRankAndScoreByCategory(userID, "money")
 		case "affinity":
-			rank, score, found = services.GetUserRankAndScoreByCategory(userID, "affinity")
+			rank, score, found, _ = services.NewUserService().GetUserRankAndScoreByCategory(userID, "affinity")
 		case "xp":
-			rank, score, found = services.GetUserRankAndScoreByCategory(userID, "xp")
+			rank, score, found, _ = services.NewUserService().GetUserRankAndScoreByCategory(userID, "xp")
 		case "general":
-			rank, score, found = services.GetUserRankAndScoreByCategory(userID, "general")
+			rank, score, found, _ = services.NewUserService().GetUserRankAndScoreByCategory(userID, "general")
 		default:
 			s.ChannelMessageSend(m.ChannelID, "Type de classement invalide. Choisissez parmi money, affinity, xp, ou general.")
 			return

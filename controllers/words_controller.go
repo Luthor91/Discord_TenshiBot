@@ -1,13 +1,21 @@
 package controllers
 
 import (
+	"github.com/Luthor91/Tenshi/database"
 	"github.com/Luthor91/Tenshi/models"
 	"gorm.io/gorm"
 )
 
-// WordController est un contrôleur pour gérer les mots positifs et négatifs
+// WordController gère les opérations sur les mots positifs et négatifs
 type WordController struct {
 	DB *gorm.DB
+}
+
+// NewWordController crée une nouvelle instance de WordController
+func NewWordController() *WordController {
+	return &WordController{
+		DB: database.DB,
+	}
 }
 
 // GetGoodWords récupère tous les bons mots
@@ -38,12 +46,9 @@ func (ctrl *WordController) GetBadWords() ([]string, error) {
 
 // AddGoodWord ajoute un nouveau bon mot
 func (ctrl *WordController) AddGoodWord(word string) error {
-	goodWord := models.GoodWord{
-		Word: word,
-	}
+	goodWord := models.GoodWord{Word: word}
 	// Vérifie si le mot existe déjà
-	var existingWord models.GoodWord
-	if err := ctrl.DB.Where("word = ?", word).First(&existingWord).Error; err == nil {
+	if err := ctrl.DB.Where("word = ?", word).First(&models.GoodWord{}).Error; err == nil {
 		return nil // Le mot existe déjà, rien à faire
 	} else if err != gorm.ErrRecordNotFound {
 		return err // Erreur inattendue
@@ -54,12 +59,9 @@ func (ctrl *WordController) AddGoodWord(word string) error {
 
 // AddBadWord ajoute un nouveau mauvais mot
 func (ctrl *WordController) AddBadWord(word string) error {
-	badWord := models.BadWord{
-		Word: word,
-	}
+	badWord := models.BadWord{Word: word}
 	// Vérifie si le mot existe déjà
-	var existingWord models.BadWord
-	if err := ctrl.DB.Where("word = ?", word).First(&existingWord).Error; err == nil {
+	if err := ctrl.DB.Where("word = ?", word).First(&models.BadWord{}).Error; err == nil {
 		return nil // Le mot existe déjà, rien à faire
 	} else if err != gorm.ErrRecordNotFound {
 		return err // Erreur inattendue

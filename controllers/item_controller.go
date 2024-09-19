@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/Luthor91/Tenshi/database"
 	"github.com/Luthor91/Tenshi/models"
 	"gorm.io/gorm"
 )
@@ -8,6 +9,13 @@ import (
 // ItemController est un contrôleur pour gérer les opérations sur les items
 type ItemController struct {
 	DB *gorm.DB
+}
+
+// NewItemController crée une nouvelle instance de LogController avec une connexion à la base de données
+func NewItemController() *ItemController {
+	return &ItemController{
+		DB: database.DB,
+	}
 }
 
 // CreateItem crée un nouvel item
