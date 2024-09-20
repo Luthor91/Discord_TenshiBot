@@ -8,6 +8,7 @@ Avant d'installer TenshiBot, assurez-vous d'avoir les éléments suivants :
 
 - **Go** (testé avec la version 1.23.1)
 - **Base de données** : une base de données Postgresql
+- **Make** 
 
 ## Installation
 
