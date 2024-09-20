@@ -28,9 +28,10 @@ func (controller *UserController) UserExistsByID(userID uint) (bool, error) {
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return false, nil // L'utilisateur n'existe pas
 	}
-	return true, result.Error // L'utilisateur existe
+	return result.Error == nil, result.Error // Retourne vrai si l'utilisateur existe
 }
 
+// UserExistsByDiscordID vérifie si un utilisateur existe en utilisant son ID Discord
 func (controller *UserController) UserExistsByDiscordID(userDiscordID string) (bool, error) {
 	var user models.User
 	result := controller.DB.Where("user_discord_id = ?", userDiscordID).First(&user)
@@ -38,13 +39,22 @@ func (controller *UserController) UserExistsByDiscordID(userDiscordID string) (b
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return false, nil // L'utilisateur n'existe pas
 	}
-	return true, result.Error // L'utilisateur existe
+	return result.Error == nil, result.Error // Retourne vrai si l'utilisateur existe
+}
+
+// GetAllUsers récupère tous les utilisateurs
+func (ctrl *UserController) GetAllUsers() ([]models.User, error) {
+	var users []models.User
+	if err := ctrl.DB.Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
 }
 
 // GetUserIDByDiscordID récupère l'identifiant interne de l'utilisateur en utilisant son ID Discord
 func (ctrl *UserController) GetUserIDByDiscordID(discordID string) (uint, error) {
 	var user models.User
-	if err := ctrl.DB.First(&user, "user_id = ?", discordID).Error; err != nil {
+	if err := ctrl.DB.First(&user, "user_discord_id = ?", discordID).Error; err != nil {
 		return 0, err
 	}
 	return user.ID, nil
@@ -53,16 +63,15 @@ func (ctrl *UserController) GetUserIDByDiscordID(discordID string) (uint, error)
 // GetUserDiscordIDByID récupère l'ID Discord de l'utilisateur en utilisant son identifiant interne
 func (ctrl *UserController) GetUserDiscordIDByID(userID uint) (string, error) {
 	var user models.User
-	if err := ctrl.DB.First(&user, "id = ?", userID).Error; err != nil {
+	if err := ctrl.DB.First(&user, userID).Error; err != nil {
 		return "", err
 	}
 	return user.UserDiscordID, nil
 }
 
 // UpdateUser met à jour les informations d'un utilisateur dans la base de données
-func (ctrl *UserController) UpdateUser(updatedUser models.User) bool {
-	result := ctrl.DB.Model(&models.User{}).Where("user_id = ?", updatedUser.UserDiscordID).Updates(updatedUser)
-	return result.RowsAffected > 0
+func (ctrl *UserController) UpdateUser(user *models.User) error {
+	return ctrl.DB.Save(user).Error
 }
 
 // CreateUser crée un nouvel utilisateur
@@ -97,7 +106,7 @@ func (ctrl *UserController) GetUserByDiscordID(userDiscordID string) (*models.Us
 // GetUserByID récupère un utilisateur par son identifiant interne
 func (ctrl *UserController) GetUserByID(userID uint) (*models.User, error) {
 	var user models.User
-	if err := ctrl.DB.First(&user, "id = ?", userID).Error; err != nil {
+	if err := ctrl.DB.First(&user, userID).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -106,38 +115,151 @@ func (ctrl *UserController) GetUserByID(userID uint) (*models.User, error) {
 // SaveUser met à jour ou insère un utilisateur dans la base de données
 func (ctrl *UserController) SaveUser(user *models.User) error {
 	var existingUser models.User
-	if err := ctrl.DB.First(&existingUser, "user_id = ?", user.UserDiscordID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+	if err := ctrl.DB.First(&existingUser, "user_discord_id = ?", user.UserDiscordID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// Si l'utilisateur n'existe pas, créer un nouvel enregistrement
-			if err := ctrl.DB.Create(user).Error; err != nil {
-				return err
-			}
-		} else {
-			return err
+			return ctrl.DB.Create(user).Error
 		}
-	} else {
-		// Mettre à jour l'utilisateur existant
-		existingUser.Username = user.Username
-		existingUser.Affinity = user.Affinity
-		existingUser.Money = user.Money
-		existingUser.Experience = user.Experience
-		existingUser.LastDailyReward = user.LastDailyReward
-		existingUser.Rank = user.Rank
-		existingUser.RankMoney = user.RankMoney
-		existingUser.RankExperience = user.RankExperience
-		existingUser.RankAffinity = user.RankAffinity
-
-		// Sauvegarder les modifications
-		if err := ctrl.DB.Save(&existingUser).Error; err != nil {
-			return err
-		}
+		return err
 	}
-	return nil
+
+	// Mettre à jour l'utilisateur existant
+	existingUser.Username = user.Username
+	existingUser.Affinity = user.Affinity
+	existingUser.Money = user.Money
+	existingUser.Experience = user.Experience
+	existingUser.LastDailyReward = user.LastDailyReward
+	existingUser.Rank = user.Rank
+	existingUser.RankMoney = user.RankMoney
+	existingUser.RankExperience = user.RankExperience
+	existingUser.RankAffinity = user.RankAffinity
+
+	// Sauvegarder les modifications
+	return ctrl.DB.Save(&existingUser).Error
 }
 
 // DeleteUser supprime un utilisateur
 func (ctrl *UserController) DeleteUser(userID string) error {
-	if err := ctrl.DB.Delete(&models.User{}, "user_id = ?", userID).Error; err != nil {
+	return ctrl.DB.Delete(&models.User{}, "user_discord_id = ?", userID).Error
+}
+
+// GiveMoney transfère une somme d'argent d'un utilisateur à un autre
+func (ctrl *UserController) GiveMoney(fromUserID, toUserID string, moneyAmount int) error {
+	fromUser, err := ctrl.GetUserByDiscordID(fromUserID)
+	if err != nil {
+		return err
+	}
+
+	toUser, err := ctrl.GetUserByDiscordID(toUserID)
+	if err != nil {
+		return err
+	}
+
+	if fromUser.Money < moneyAmount {
+		return errors.New("not enough money to transfer")
+	}
+
+	fromUser.Money -= moneyAmount
+	toUser.Money += moneyAmount
+
+	if err := ctrl.UpdateUser(fromUser); err != nil {
+		return err
+	}
+	if err := ctrl.UpdateUser(toUser); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// GiveXP transfère une quantité d'expérience d'un utilisateur à un autre
+func (ctrl *UserController) GiveXP(fromUserID, toUserID string, xpAmount int) error {
+	fromUser, err := ctrl.GetUserByDiscordID(fromUserID)
+	if err != nil {
+		return err
+	}
+
+	toUser, err := ctrl.GetUserByDiscordID(toUserID)
+	if err != nil {
+		return err
+	}
+
+	fromUser.Experience -= xpAmount
+	toUser.Experience += xpAmount
+
+	if err := ctrl.UpdateUser(fromUser); err != nil {
+		return err
+	}
+	if err := ctrl.UpdateUser(toUser); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SetMoney définit un montant d'argent pour un utilisateur
+func (ctrl *UserController) SetMoney(userID string, moneyAmount int) error {
+	user, err := ctrl.GetUserByDiscordID(userID)
+	if err != nil {
+		return err
+	}
+
+	user.Money = moneyAmount
+	return ctrl.UpdateUser(user)
+}
+
+// SetAffinity définit un montant d'affinité pour un utilisateur
+func (ctrl *UserController) SetAffinity(userID string, affinityAmount int) error {
+	user, err := ctrl.GetUserByDiscordID(userID)
+	if err != nil {
+		return err
+	}
+
+	user.Affinity = affinityAmount
+	return ctrl.UpdateUser(user)
+}
+
+// SetXP définit un montant d'expérience pour un utilisateur
+func (ctrl *UserController) SetXP(userID string, xpAmount int) error {
+	user, err := ctrl.GetUserByDiscordID(userID)
+	if err != nil {
+		return err
+	}
+
+	user.Experience = xpAmount
+	return ctrl.UpdateUser(user)
+}
+
+// UpdateMoney met à jour le montant d'argent d'un utilisateur
+func (ctrl *UserController) UpdateMoney(userID string, moneyAmount int) error {
+	user, err := ctrl.GetUserByDiscordID(userID)
+	if err != nil {
+		return err
+	}
+
+	user.Money += moneyAmount
+	return ctrl.UpdateUser(user)
+}
+
+// UpdateXP met à jour le montant d'expérience d'un utilisateur
+func (ctrl *UserController) UpdateXP(userID string, xpAmount int) error {
+	user, err := ctrl.GetUserByDiscordID(userID)
+	if err != nil {
+		return err
+	}
+
+	user.Experience += xpAmount
+	return ctrl.UpdateUser(user)
+}
+
+// AddUserIfNotExists ajoute un utilisateur s'il n'existe pas déjà
+func (ctrl *UserController) AddUserIfNotExists(userID, username string) error {
+	exists, err := ctrl.UserExistsByDiscordID(userID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		_, err := ctrl.CreateUser(userID, username, 0, 0, 0, "", 0, 0, 0, 0)
 		return err
 	}
 	return nil

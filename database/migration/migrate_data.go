@@ -11,7 +11,7 @@ import (
 // MigrateAllPostgresql migre toutes les tables de la base de données
 func MigrateAllPostgresql(db *gorm.DB) {
 	// Migrate the schema
-	err := db.AutoMigrate(&models.User{}, &models.Log{}, &models.ShopItem{}, &models.UserShopCooldown{}, &models.Item{}, &models.GoodWord{}, &models.BadWord{})
+	err := db.AutoMigrate(&models.User{}, &models.Log{}, &models.ShopItem{}, &models.UserShopCooldown{}, &models.Item{}, &models.GoodWord{}, &models.BadWord{}, &models.Warn{})
 	if err != nil {
 		log.Fatalf("Error migrating the database schema: %v", err)
 	}

@@ -42,7 +42,7 @@ func (service *LogService) LogMessage(s *discordgo.Session, m *discordgo.Message
 	}
 
 	// Créer une nouvelle entrée de log
-	entry := models.Log{
+	entry := &models.Log{
 		Timestamp:     time.Now(),
 		ServerID:      m.GuildID,
 		ServerName:    guild.Name,

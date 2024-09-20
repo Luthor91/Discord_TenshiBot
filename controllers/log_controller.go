@@ -32,6 +32,7 @@ func (ctrl *LogController) CreateLog(timestamp time.Time, serverID, serverName, 
 		Username:      username,
 		Message:       message,
 	}
+
 	if err := ctrl.DB.Create(&logEntry).Error; err != nil {
 		return nil, err
 	}
@@ -47,12 +48,14 @@ func (ctrl *LogController) GetLog(id uint) (*models.Log, error) {
 	return &logEntry, nil
 }
 
-// UpdateLog met à jour une entrée de journal
+// UpdateLog met à jour une entrée de journal existante
 func (ctrl *LogController) UpdateLog(id uint, timestamp time.Time, serverID, serverName, channelID, channelName, userID, username, message string) (*models.Log, error) {
 	var logEntry models.Log
 	if err := ctrl.DB.First(&logEntry, id).Error; err != nil {
 		return nil, err
 	}
+
+	// Mise à jour des champs de l'entrée de journal
 	logEntry.Timestamp = timestamp
 	logEntry.ServerID = serverID
 	logEntry.ServerName = serverName
@@ -61,24 +64,24 @@ func (ctrl *LogController) UpdateLog(id uint, timestamp time.Time, serverID, ser
 	logEntry.UserDiscordID = userID
 	logEntry.Username = username
 	logEntry.Message = message
+
 	if err := ctrl.DB.Save(&logEntry).Error; err != nil {
 		return nil, err
 	}
 	return &logEntry, nil
 }
 
-// DeleteLog supprime une entrée de journal
+// DeleteLog supprime une entrée de journal par ID
 func (ctrl *LogController) DeleteLog(id uint) error {
-	if err := ctrl.DB.Delete(&models.Log{}, id).Error; err != nil {
-		return err
-	}
-	return nil
+	return ctrl.DB.Delete(&models.Log{}, id).Error
 }
 
-// SaveLog enregistre une entrée de journal dans la base de données
-func (ctrl *LogController) SaveLog(entry models.Log) error {
-	if err := ctrl.DB.Create(&entry).Error; err != nil {
-		return err
+// SaveLog enregistre ou met à jour une entrée de journal dans la base de données
+func (ctrl *LogController) SaveLog(entry *models.Log) error {
+	if entry.ID == 0 {
+		// Créer une nouvelle entrée si ID est zéro
+		return ctrl.DB.Create(entry).Error
 	}
-	return nil
+	// Sinon, mettre à jour l'entrée existante
+	return ctrl.DB.Save(entry).Error
 }

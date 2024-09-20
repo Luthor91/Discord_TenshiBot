@@ -53,7 +53,11 @@ else
 	fi
 endif
 
+# Cible pour nettoyer le projet et le cache
+clean:
+	cd $(PROJECT_DIR) && rm -f $(EXEC)$(EXT) && go clean -modcache
+
 # Cible pour tout construire et executer sur le système d'exploitation detecte
 all: setup build run
 
-.PHONY: setup build run all
+.PHONY: setup build run create_db clean all

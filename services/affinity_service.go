@@ -62,8 +62,8 @@ func (service *AffinityService) AdjustAffinity(m *discordgo.MessageCreate) {
 	for _, word := range badwords {
 		if strings.Contains(strings.ToLower(m.Content), strings.ToLower(word)) {
 			user.Affinity-- // Diminuer l'affinité
-			success := service.userCtrl.UpdateUser(*user)
-			if !success {
+			err := service.userCtrl.UpdateUser(user)
+			if err != nil {
 				// Gérer l'erreur de mise à jour de l'utilisateur
 				return
 			}
@@ -75,8 +75,8 @@ func (service *AffinityService) AdjustAffinity(m *discordgo.MessageCreate) {
 	for _, word := range goodwords {
 		if strings.Contains(strings.ToLower(m.Content), strings.ToLower(word)) {
 			user.Affinity++ // Augmenter l'affinité
-			success := service.userCtrl.UpdateUser(*user)
-			if !success {
+			err := service.userCtrl.UpdateUser(user)
+			if err != nil {
 				// Gérer l'erreur de mise à jour de l'utilisateur
 				return
 			}

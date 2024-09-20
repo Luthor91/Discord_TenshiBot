@@ -17,9 +17,7 @@ var DB *gorm.DB
 
 func InitDatabase() {
 	validateEnvVars()
-	if !CreatePostgresDatabase() {
-		log.Printf("La base de données existe déjà ou une erreur est survenue.")
-	}
+	CreatePostgresDatabase()
 	DB = ConnectToPostgres()
 	migration.MigrateAllPostgresql(DB)
 }

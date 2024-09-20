@@ -103,6 +103,17 @@ func (service *ShopService) GetShopItems() ([]models.ShopItem, error) {
 	return items, nil
 }
 
+// GetShopItemByName récupère un item de la boutique par son nom
+func (service *ShopService) GetShopItemByName(name string) (*models.ShopItem, error) {
+	var item models.ShopItem
+	result := service.db.Where("name = ? AND deleted_at IS NULL", name).First(&item)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, errors.New("item non trouvé")
+	}
+	return &item, result.Error
+}
+
 // GetShopCooldown renvoie le temps restant avant que l'utilisateur puisse acheter à nouveau un article
 func (service *ShopService) GetShopCooldown(userID string, itemID uint) (time.Time, error) {
 	// Chercher l'enregistrement du cooldown pour cet utilisateur et cet article

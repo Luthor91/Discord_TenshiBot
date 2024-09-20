@@ -69,3 +69,21 @@ func (ctrl *WordController) AddBadWord(word string) error {
 	// Ajoute le nouveau mot
 	return ctrl.DB.Create(&badWord).Error
 }
+
+// DeleteGoodWord supprime un bon mot par son nom
+func (ctrl *WordController) DeleteGoodWord(word string) error {
+	// Vérifie si le mot existe
+	if err := ctrl.DB.Where("word = ?", word).Delete(&models.GoodWord{}).Error; err != nil {
+		return err // Erreur lors de la suppression
+	}
+	return nil // Suppression réussie
+}
+
+// DeleteBadWord supprime un mauvais mot par son nom
+func (ctrl *WordController) DeleteBadWord(word string) error {
+	// Vérifie si le mot existe
+	if err := ctrl.DB.Where("word = ?", word).Delete(&models.BadWord{}).Error; err != nil {
+		return err // Erreur lors de la suppression
+	}
+	return nil // Suppression réussie
+}

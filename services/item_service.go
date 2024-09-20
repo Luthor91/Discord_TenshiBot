@@ -69,16 +69,114 @@ func (service *ItemService) GetUserItems(userID string) ([]models.Item, error) {
 	return items, nil
 }
 
-// HasItem vérifie si l'utilisateur possède suffisamment de l'item spécifié
-func (service *ItemService) HasItem(userID string, itemName string, quantity int) (bool, error) {
+// RemoveItem retire un certain montant d'un item de l'utilisateur
+func (service *ItemService) RemoveItem(userID string, itemName string, amount int) error {
 	var item models.Item
 	result := database.DB.Where("user_discord_id = ? AND name = ?", userID, itemName).First(&item)
+
 	if result.Error != nil {
-		return false, result.Error
+		return errors.New("item non trouvé")
 	}
 
-	// Vérifier si l'utilisateur a l'item et la quantité nécessaire
-	return item.Quantity >= quantity, nil
+	if item.Quantity < amount {
+		return errors.New("quantité insuffisante")
+	}
+
+	item.Quantity -= amount
+	if item.Quantity == 0 {
+		// Supprimer l'item s'il n'en reste plus
+		if err := database.DB.Delete(&item).Error; err != nil {
+			return err
+		}
+	} else {
+		if err := database.DB.Save(&item).Error; err != nil {
+			return err
+		}
+	}
+
+	log.Printf("Retiré %d de l'item %s de l'utilisateur %s", amount, itemName, userID)
+	return nil
+}
+
+// HasItem vérifie si l'utilisateur possède une quantité suffisante de l'item
+func (service *ItemService) HasItem(userID, itemName string, quantity int) (bool, error) {
+	var user models.User
+	if err := database.DB.First(&user, "user_discord_id = ?", userID).Error; err != nil {
+		return false, err
+	}
+
+	// Vérifiez la quantité d'item que l'utilisateur possède
+	itemCount := 0
+	for _, item := range user.Items {
+		if item.Name == itemName {
+			itemCount += item.Quantity
+		}
+	}
+
+	return itemCount >= quantity, nil
+}
+
+// GiveItem transfère un item d'un utilisateur à un autre
+func (service *ItemService) GiveItem(fromUserID, toUserID, itemName string, quantity int) error {
+	var fromUser, toUser models.User
+
+	// Récupérer les utilisateurs
+	if err := database.DB.First(&fromUser, "user_discord_id = ?", fromUserID).Error; err != nil {
+		return err
+	}
+	if err := database.DB.First(&toUser, "user_discord_id = ?", toUserID).Error; err != nil {
+		return err
+	}
+
+	// Vérifier si l'utilisateur qui donne a suffisamment d'item
+	itemCount := 0
+	for _, item := range fromUser.Items {
+		if item.Name == itemName {
+			itemCount += item.Quantity
+		}
+	}
+
+	if itemCount < quantity {
+		return errors.New("pas assez d'items pour transférer")
+	}
+
+	// Retirer l'item de l'utilisateur qui donne
+	for i, item := range fromUser.Items {
+		if item.Name == itemName {
+			if item.Quantity > quantity {
+				fromUser.Items[i].Quantity -= quantity
+				break
+			} else {
+				// Supprimer l'item si la quantité est égale ou inférieure
+				fromUser.Items = append(fromUser.Items[:i], fromUser.Items[i+1:]...)
+				break
+			}
+		}
+	}
+
+	// Ajouter l'item à l'utilisateur qui reçoit
+	itemFound := false
+	for i, item := range toUser.Items {
+		if item.Name == itemName {
+			toUser.Items[i].Quantity += quantity
+			itemFound = true
+			break
+		}
+	}
+
+	if !itemFound {
+		toUser.Items = append(toUser.Items, models.Item{Name: itemName, Quantity: quantity})
+	}
+
+	// Sauvegarder les modifications dans la base de données
+	if err := database.DB.Save(&fromUser).Error; err != nil {
+		return err
+	}
+	if err := database.DB.Save(&toUser).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // UseItem applique un item à un autre utilisateur

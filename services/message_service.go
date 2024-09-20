@@ -1,24 +1,25 @@
 package services
 
 import (
+	"log"
+
+	"github.com/Luthor91/Tenshi/controllers"
 	"github.com/bwmarrin/discordgo"
 )
 
 // MessageService est un service pour gérer les messages
 type MessageService struct {
-	userService       *UserService
-	experienceService *ExperienceService
-	affinityService   *AffinityService
-	logService        *LogService
+	userService     *UserService
+	affinityService *AffinityService
+	logService      *LogService
 }
 
 // NewMessageService crée une nouvelle instance de MessageService
-func NewMessageService(userService *UserService, experienceService *ExperienceService, affinityService *AffinityService, logService *LogService) *MessageService {
+func NewMessageService(userService *UserService, affinityService *AffinityService, logService *LogService) *MessageService {
 	return &MessageService{
-		userService:       userService,
-		experienceService: experienceService,
-		affinityService:   affinityService,
-		logService:        logService,
+		userService:     userService,
+		affinityService: affinityService,
+		logService:      logService,
 	}
 }
 
@@ -31,15 +32,25 @@ func (service *MessageService) NewServerMessage(discord *discordgo.Session, mess
 
 	// Ajouter de la monnaie et de l'expérience à l'utilisateur
 	if err := service.userService.AddUserIfNotExists(message.Author.ID, message.Author.Username); err != nil {
+		log.Printf("Erreur lors de l'ajout de l'utilisateur : %v", err)
 		return
 	}
-	if err := service.experienceService.AddExperience(message.Author.ID, 1); err != nil {
+
+	user, err := controllers.NewUserController().GetUserByDiscordID(message.Author.ID)
+	if err != nil {
+		log.Printf("Erreur lors de la récupération de l'utilisateur : %v", err)
+		return
+	}
+
+	if err := service.userService.AddExperience(user, 1); err != nil {
+		log.Printf("Erreur lors de l'ajout de l'expérience : %v", err)
 		return
 	}
 
 	service.affinityService.AdjustAffinity(message)
 
 	if err := service.logService.LogMessage(discord, message); err != nil {
+		log.Printf("Erreur lors de l'enregistrement du message : %v", err)
 		return
 	}
 }
@@ -53,6 +64,6 @@ func (service *MessageService) NewPrivateMessage(discord *discordgo.Session, mes
 
 	// Répondre au message privé
 	if _, err := discord.ChannelMessageSend(message.ChannelID, "Merci pour votre message privé !"); err != nil {
-		// Gérer l'erreur si nécessaire
+		log.Printf("Erreur lors de l'envoi de la réponse au message privé : %v", err)
 	}
 }
