@@ -71,6 +71,24 @@ func (ctrl *LogController) UpdateLog(id uint, timestamp time.Time, serverID, ser
 	return &logEntry, nil
 }
 
+// GetLastLogs récupère les X derniers logs
+func (ctrl *LogController) GetLastLogs(limit int) ([]models.Log, error) {
+	var logs []models.Log
+	if err := ctrl.DB.Order("timestamp desc").Limit(limit).Find(&logs).Error; err != nil {
+		return nil, err
+	}
+	return logs, nil
+}
+
+// GetLogsByUser récupère les logs associés à un utilisateur Discord spécifique
+func (ctrl *LogController) GetLogsByUser(userID string, limit int) ([]models.Log, error) {
+	var logs []models.Log
+	if err := ctrl.DB.Where("user_discord_id = ?", userID).Order("timestamp desc").Limit(limit).Find(&logs).Error; err != nil {
+		return nil, err
+	}
+	return logs, nil
+}
+
 // DeleteLog supprime une entrée de journal par ID
 func (ctrl *LogController) DeleteLog(id uint) error {
 	return ctrl.DB.Delete(&models.Log{}, id).Error

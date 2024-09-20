@@ -5,6 +5,7 @@ import (
 	"github.com/Luthor91/Tenshi/commands/channel_commands"
 	"github.com/Luthor91/Tenshi/commands/experience_commands"
 	"github.com/Luthor91/Tenshi/commands/item_commands"
+	"github.com/Luthor91/Tenshi/commands/log_commands"
 	"github.com/Luthor91/Tenshi/commands/lol_commands"
 	"github.com/Luthor91/Tenshi/commands/moderation_commands"
 	"github.com/Luthor91/Tenshi/commands/modvoice_commands"
@@ -94,6 +95,10 @@ func RegisterHandlers(discord *discordgo.Session) {
 	discord.AddHandler(item_commands.InventoryCommand)
 	discord.AddHandler(item_commands.UseItemCommand)
 	discord.AddHandler(item_commands.GiveItemCommand)
+
+	// Commandes de Logs
+	discord.AddHandler(log_commands.GetLogsCommand)
+	discord.AddHandler(log_commands.GetUserLogsCommand)
 
 	// Commandes LOL
 	discord.AddHandler(lol_commands.ChampionRotationCommand)

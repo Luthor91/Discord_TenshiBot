@@ -23,6 +23,32 @@ func NewLogService(logCtrl *controllers.LogController) *LogService {
 	}
 }
 
+// GetLastLogs récupère les X derniers logs
+func (service *LogService) GetLastLogs(limit int) ([]models.Log, error) {
+	service.mu.Lock()
+	defer service.mu.Unlock()
+
+	logs, err := service.logCtrl.GetLastLogs(limit)
+	if err != nil {
+		log.Printf("Erreur lors de la récupération des derniers logs: %v", err)
+		return nil, err
+	}
+	return logs, nil
+}
+
+// GetLogsByUser récupère les logs associés à un utilisateur Discord spécifique
+func (service *LogService) GetLogsByUser(userID string, limit int) ([]models.Log, error) {
+	service.mu.Lock()
+	defer service.mu.Unlock()
+
+	logs, err := service.logCtrl.GetLogsByUser(userID, limit)
+	if err != nil {
+		log.Printf("Erreur lors de la récupération des logs pour l'utilisateur %s: %v", userID, err)
+		return nil, err
+	}
+	return logs, nil
+}
+
 // LogMessage enregistre un message dans la base de données
 func (service *LogService) LogMessage(s *discordgo.Session, m *discordgo.MessageCreate) error {
 	service.mu.Lock()
