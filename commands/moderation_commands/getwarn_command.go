@@ -52,7 +52,9 @@ func GetWarnCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	mentionID := mention[2 : len(mention)-1] // Extrait l'ID de la mention (enlève <@ et >)
 
 	// Récupérer les avertissements de l'utilisateur via le service
-	warns, err := services.NewWarnService(controllers.NewWarnController()).GetWarns(mentionID)
+	warnController := controllers.NewWarnController()
+	warnService := services.NewWarnService(warnController, s, m.GuildID)
+	warns, err := warnService.GetWarns(mentionID)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Erreur lors de la récupération des avertissements.")
 		return

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"sort"
-	"sync"
 	"time"
 
 	"github.com/Luthor91/Tenshi/controllers" // Importer le contrôleur
@@ -17,7 +16,6 @@ import (
 // UserService est un service pour gérer les opérations liées aux utilisateurs
 type UserService struct {
 	userCtrl *controllers.UserController
-	mu       sync.Mutex // Mutex pour la gestion des accès concurrents
 }
 
 // NewUserService crée une nouvelle instance de UserService
@@ -37,6 +35,24 @@ func (service *UserService) AddUserIfNotExists(userID, username string) error {
 // GetAllUsers utilise le UserController pour récupérer tous les utilisateurs
 func (service *UserService) GetAllUsers() ([]models.User, error) {
 	return service.userCtrl.GetAllUsers()
+}
+
+// GetUserByID utilise le UserController pour récupérer un utilisateur par ID
+func (service *UserService) GetUserByID(userID uint) (*models.User, error) {
+	userPtr, err := service.userCtrl.GetUserByID(userID)
+	if err != nil {
+		return &models.User{}, err // Gérer l'erreur si nécessaire
+	}
+	return userPtr, nil // Déférencer le pointeur pour retourner un modèle User
+}
+
+// GetUserByDiscordID utilise le UserController pour récupérer un utilisateur par ID Discord
+func (service *UserService) GetUserByDiscordID(userDiscordID string) (*models.User, error) {
+	userPtr, err := service.userCtrl.GetUserByDiscordID(userDiscordID)
+	if err != nil {
+		return &models.User{}, err // Gérer l'erreur si nécessaire
+	}
+	return userPtr, nil // Déférencer le pointeur pour retourner un modèle User
 }
 
 // GetUserRankAndScoreByCategory renvoie le rang et le score d'un utilisateur pour une catégorie spécifique

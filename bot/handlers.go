@@ -4,6 +4,7 @@ import (
 	"github.com/Luthor91/Tenshi/commands/affinity_commands"
 	"github.com/Luthor91/Tenshi/commands/channel_commands"
 	"github.com/Luthor91/Tenshi/commands/experience_commands"
+	"github.com/Luthor91/Tenshi/commands/game_commands"
 	"github.com/Luthor91/Tenshi/commands/item_commands"
 	"github.com/Luthor91/Tenshi/commands/log_commands"
 	"github.com/Luthor91/Tenshi/commands/lol_commands"
@@ -99,6 +100,11 @@ func RegisterHandlers(discord *discordgo.Session) {
 	// Commandes de Logs
 	discord.AddHandler(log_commands.GetLogsCommand)
 	discord.AddHandler(log_commands.GetUserLogsCommand)
+
+	// Commandes Games
+	discord.AddHandler(game_commands.BetCommand)
+	discord.AddHandler(game_commands.GuessCommand)
+	discord.AddHandler(game_commands.ShifumiCommand)
 
 	// Commandes LOL
 	discord.AddHandler(lol_commands.ChampionRotationCommand)

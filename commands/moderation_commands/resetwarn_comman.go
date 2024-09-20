@@ -11,8 +11,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// WarnCommand avertit un utilisateur
-func WarnCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
+// ResetWarnCommand réinitialise les avertissements d'un utilisateur
+func ResetWarnCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Ignorer les messages du bot
 	if m.Author.ID == s.State.User.ID {
 		return
@@ -25,17 +25,17 @@ func WarnCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Formater la commande avec le préfixe
-	command := fmt.Sprintf("%swarn", config.AppConfig.BotPrefix)
+	command := fmt.Sprintf("%sresetwarn", config.AppConfig.BotPrefix)
 
 	// Vérifier si le message commence par la commande
 	if !strings.HasPrefix(m.Content, command) {
 		return
 	}
 
-	// Récupère la mention et la raison
+	// Récupérer la mention
 	parts := strings.Fields(m.Content)
-	if len(parts) < 3 {
-		s.ChannelMessageSend(m.ChannelID, "Usage: ?warn <@mention_user> <raison>")
+	if len(parts) < 2 {
+		s.ChannelMessageSend(m.ChannelID, "Usage: ?resetwarn <@mention_user>")
 		return
 	}
 
@@ -47,22 +47,19 @@ func WarnCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	mentionID := mention[2 : len(mention)-1] // Extrait l'ID de la mention
 
-	// Combiner les autres parties comme la raison
-	reason := strings.Join(parts[2:], " ")
-
 	// Créer une instance de WarnController
 	warnController := controllers.NewWarnController()
 
-	// Créer une instance de WarnService avec la session Discord et l'ID du serveur
+	// Créer une instance de WarnService
 	warnService := services.NewWarnService(warnController, s, m.GuildID)
 
-	// Ajouter l'avertissement à la base de données
-	err := warnService.AddWarn(mentionID, reason, m.Author.ID)
+	// Réinitialiser les avertissements pour l'utilisateur
+	err := warnService.ResetWarns(mentionID)
 	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "Erreur lors de l'enregistrement de l'avertissement.")
+		s.ChannelMessageSend(m.ChannelID, "Erreur lors de la réinitialisation des avertissements.")
 		return
 	}
 
-	// Envoyer un message confirmant l'avertissement
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Avertissement enregistré pour <@%s> : %s", mentionID, reason))
+	// Envoyer un message confirmant la réinitialisation
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Tous les avertissements pour <@%s> ont été réinitialisés.", mentionID))
 }

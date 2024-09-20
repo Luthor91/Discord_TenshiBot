@@ -3,7 +3,6 @@ package moderation_commands
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/Luthor91/Tenshi/api/discord"
 	"github.com/Luthor91/Tenshi/config"
@@ -53,7 +52,7 @@ func TimeoutCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		// Appliquer le timeout
-		err = timeoutUser(s, m.GuildID, userID, duration)
+		err = discord.TimeoutUser(s, m.GuildID, userID, duration)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Erreur lors de la mise en timeout de l'utilisateur : %v", err))
 			return
@@ -62,14 +61,4 @@ func TimeoutCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Informer du succès de la commande
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("L'utilisateur <@%s> a été mis en timeout pour %v.", userID, duration))
 	}
-}
-
-// timeoutUser met un utilisateur en timeout pour une durée donnée
-func timeoutUser(s *discordgo.Session, guildID, userID string, duration time.Duration) error {
-	timeoutUntil := time.Now().Add(duration)
-	err := s.GuildMemberTimeout(guildID, userID, &timeoutUntil)
-	if err != nil {
-		return err
-	}
-	return nil
 }

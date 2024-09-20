@@ -20,8 +20,8 @@ func GetLogsCommand(s *discordgo.Session, m *discordgo.MessageCreate, service *s
 	}
 
 	// Vérifier si l'utilisateur est modérateur
-	isMod, err := discord.UserHasModeratorRole(s, m.GuildID, m.Author.ID)
-	if err != nil || !isMod {
+	isMod, _ := discord.UserHasModeratorRole(s, m.GuildID, m.Author.ID)
+	if !isMod {
 		return
 	}
 
