@@ -11,6 +11,7 @@ import (
 	"github.com/Luthor91/Tenshi/commands/moderation_commands"
 	"github.com/Luthor91/Tenshi/commands/money_commands"
 	"github.com/Luthor91/Tenshi/commands/ranking_commands"
+	"github.com/Luthor91/Tenshi/commands/stat_commands"
 	"github.com/Luthor91/Tenshi/commands/utility_commands"
 	"github.com/Luthor91/Tenshi/commands/word_commands"
 	"github.com/Luthor91/Tenshi/controllers"
@@ -42,12 +43,7 @@ func RegisterHandlers(discord *discordgo.Session) {
 	discord.AddHandler(moderation_commands.ModerateMessageCommand)
 
 	// Commandes de gestion des mots
-	discord.AddHandler(word_commands.AddGoodWordCommand)
-	discord.AddHandler(word_commands.AddBadWordCommand)
-	discord.AddHandler(word_commands.DeleteGoodWordCommand)
-	discord.AddHandler(word_commands.DeleteBadWordCommand)
-	discord.AddHandler(word_commands.GetGoodWordsCommand)
-	discord.AddHandler(word_commands.GetBadWordsCommand)
+	discord.AddHandler(word_commands.WordCommand)
 
 	// Commandes de gestion de channels
 	discord.AddHandler(channel_commands.ChannelCommand)
@@ -75,6 +71,9 @@ func RegisterHandlers(discord *discordgo.Session) {
 
 	// Commandes de Logs
 	discord.AddHandler(log_commands.LogsCommand)
+
+	// Commandes de Stats
+	discord.AddHandler(stat_commands.StatCommand)
 
 	// Commandes Games
 	discord.AddHandler(game_commands.BetCommand)

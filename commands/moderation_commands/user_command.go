@@ -4,11 +4,28 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Luthor91/Tenshi/api/discord"
 	"github.com/Luthor91/Tenshi/utils"
 	"github.com/bwmarrin/discordgo"
 )
 
 func ModerateUserCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
+	if m.Author.ID == s.State.User.ID {
+		return
+	}
+
+	// Vérifier si l'utilisateur est modérateur (adapter cette vérification selon votre logique)
+	isMod, err := discord.UserHasModeratorRole(s, m.GuildID, m.Author.ID)
+	if err != nil || !isMod {
+		s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas les permissions nécessaires pour exécuter cette commande.")
+		return
+	}
+
+	// Vérifier si la commande commence par "?user"
+	if !strings.HasPrefix(m.Content, "?user") {
+		return
+	}
+
 	// Parsing command
 	args := strings.Fields(m.Content)
 
@@ -26,6 +43,7 @@ func ModerateUserCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	actionTime := time.Duration(0)
 	targetChannel := ""
 
+	// Gérer les différentes actions (ban, warn, kick, etc.)
 	if val, exists := parsedArgs["-b"]; exists {
 		action = "ban"
 		reason = val
@@ -71,7 +89,7 @@ func ModerateUserCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Perform the specified action
+	// Effectuer l'action spécifiée
 	switch action {
 	case "ban":
 		banUser(s, m, userID, reason)
