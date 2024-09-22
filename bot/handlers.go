@@ -9,7 +9,6 @@ import (
 	"github.com/Luthor91/Tenshi/commands/log_commands"
 	"github.com/Luthor91/Tenshi/commands/lol_commands"
 	"github.com/Luthor91/Tenshi/commands/moderation_commands"
-	"github.com/Luthor91/Tenshi/commands/modvoice_commands"
 	"github.com/Luthor91/Tenshi/commands/money_commands"
 	"github.com/Luthor91/Tenshi/commands/ranking_commands"
 	"github.com/Luthor91/Tenshi/commands/utility_commands"
@@ -36,21 +35,11 @@ func RegisterHandlers(discord *discordgo.Session) {
 	discord.AddHandler(messageService.NewServerMessage)
 
 	// Commandes d'affinité
-	discord.AddHandler(affinity_commands.BurnAffinityCommand)
-	discord.AddHandler(affinity_commands.GetAffinityCommand)
-	discord.AddHandler(affinity_commands.SetAffinityCommand)
+	discord.AddHandler(affinity_commands.AffinityCommand)
 
 	// Commandes de modération
-	discord.AddHandler(moderation_commands.BanCommand)
-	discord.AddHandler(moderation_commands.KickCommand)
-	discord.AddHandler(moderation_commands.DeleteCommand)
-	discord.AddHandler(moderation_commands.TimeoutCommand)
-
-	// Commandes de modération vocale
-	discord.AddHandler(modvoice_commands.DeafenVoiceCommand)
-	discord.AddHandler(modvoice_commands.KickVoiceCommand)
-	discord.AddHandler(modvoice_commands.MuteVoiceCommand)
-	discord.AddHandler(modvoice_commands.MoveUserVoiceCommand)
+	discord.AddHandler(moderation_commands.ModerateUserCommand)
+	discord.AddHandler(moderation_commands.ModerateMessageCommand)
 
 	// Commandes de gestion des mots
 	discord.AddHandler(word_commands.AddGoodWordCommand)
@@ -61,28 +50,17 @@ func RegisterHandlers(discord *discordgo.Session) {
 	discord.AddHandler(word_commands.GetBadWordsCommand)
 
 	// Commandes de gestion de channels
-	discord.AddHandler(channel_commands.CreateTextChannelCommand)
-	discord.AddHandler(channel_commands.CreateVoiceChannelCommand)
-	discord.AddHandler(channel_commands.DeleteChannelByNameCommand)
-	discord.AddHandler(channel_commands.CreateTemporaryTextChannelCommand)
-	discord.AddHandler(channel_commands.CreateTemporaryVoiceChannelCommand)
+	discord.AddHandler(channel_commands.ChannelCommand)
 
 	// Commandes d'expérience
-	discord.AddHandler(experience_commands.BurnExperienceCommand)
-	discord.AddHandler(experience_commands.GetExperienceCommand)
-	discord.AddHandler(experience_commands.SetXPCommand)
-	discord.AddHandler(experience_commands.GiveXPCommand)
+	discord.AddHandler(experience_commands.ExperienceCommand)
 
 	// Commandes de classement
 	discord.AddHandler(ranking_commands.LeaderboardCommand)
 	discord.AddHandler(ranking_commands.RankCommand)
 
 	// Commandes de monnaie
-	discord.AddHandler(money_commands.BurnMoneyCommand)
-	discord.AddHandler(money_commands.GetMoneyCommand)
-	discord.AddHandler(money_commands.DailyMoneyCommand)
-	discord.AddHandler(money_commands.GiveMoneyCommand)
-	discord.AddHandler(money_commands.SetMoneyCommand)
+	discord.AddHandler(money_commands.MoneyCommand)
 
 	// Commandes utilitaires
 	discord.AddHandler(utility_commands.ByeCommand)
@@ -93,13 +71,10 @@ func RegisterHandlers(discord *discordgo.Session) {
 	discord.AddHandler(utility_commands.ReminderCommand)
 
 	// Commandes d'articles
-	discord.AddHandler(item_commands.InventoryCommand)
-	discord.AddHandler(item_commands.UseItemCommand)
-	discord.AddHandler(item_commands.GiveItemCommand)
+	discord.AddHandler(item_commands.ItemCommand)
 
 	// Commandes de Logs
-	discord.AddHandler(log_commands.GetLogsCommand)
-	discord.AddHandler(log_commands.GetUserLogsCommand)
+	discord.AddHandler(log_commands.LogsCommand)
 
 	// Commandes Games
 	discord.AddHandler(game_commands.BetCommand)

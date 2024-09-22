@@ -19,7 +19,7 @@ func GuessCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Formater la commande avec le préfixe
-	command := fmt.Sprintf("%sbet", config.AppConfig.BotPrefix)
+	command := fmt.Sprintf("%sguess", config.AppConfig.BotPrefix)
 
 	// Vérifier si le message commence par la commande
 	if !strings.HasPrefix(m.Content, command) {
