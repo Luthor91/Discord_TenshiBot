@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Luthor91/Tenshi/config" // Assurez-vous de remplacer par le chemin correct
+	"github.com/Luthor91/Tenshi/config"
 )
 
 // Helper function for making API requests

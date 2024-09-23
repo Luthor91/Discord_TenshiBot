@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Luthor91/Tenshi/config" // Assurez-vous de pointer vers votre fichier de configuration
+	// Assurez-vous de pointer vers votre fichier de configuration
+
+	"github.com/Luthor91/Tenshi/config"
 	"github.com/bwmarrin/discordgo"
 )
 

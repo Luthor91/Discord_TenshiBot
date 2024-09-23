@@ -15,6 +15,7 @@ func ModerateUserCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Vérifier si l'utilisateur est modérateur
+	// Vérifier si l'utilisateur est modérateur
 	isMod, err := discord.UserHasModeratorRole(s, m.GuildID, m.Author.ID)
 	if err != nil || !isMod {
 		s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas les permissions nécessaires pour exécuter cette commande.")
@@ -36,6 +37,24 @@ func ModerateUserCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	// Si aucun argument n'est renseigné, afficher un message explicatif
+	if len(parsedArgs) == 0 {
+		s.ChannelMessageSend(m.ChannelID, "Arguments possibles :\n"+
+			"-n [user]: mentionner l'utilisateur\n"+
+			"-b [reason]: bannir l'utilisateur avec une raison\n"+
+			"-w [reason]: avertir l'utilisateur avec une raison\n"+
+			"-k [reason]: expulser l'utilisateur avec une raison\n"+
+			"-m [duration]: mettre l'utilisateur en sourdine pour une durée\n"+
+			"-d [duration]: rendre l'utilisateur sourd pour une durée\n"+
+			"-to [duration]: mettre l'utilisateur en timeout pour une durée\n"+
+			"-mv [channel]: déplacer l'utilisateur dans un canal spécifique\n"+
+			"-t [duration]: durée de l'action (pour mute, deafen, timeout)\n"+
+			"-r: réinitialiser tous les statuts de l'utilisateur\n"+
+			"-rw: réinitialiser les avertissements de l'utilisateur")
+		return
+	}
+
+	// Récupérer les valeurs de parsedArgs
 	// Si aucun argument n'est renseigné, afficher un message explicatif
 	if len(parsedArgs) == 0 {
 		s.ChannelMessageSend(m.ChannelID, "Arguments possibles :\n"+
