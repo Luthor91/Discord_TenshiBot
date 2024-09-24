@@ -103,7 +103,7 @@ func (ctrl *ShopController) GetUserShopCooldown(userDiscordID string, itemID uin
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		// Si l'enregistrement n'existe pas, crée un nouvel enregistrement par défaut
 		cooldown = models.UserShopCooldown{
-			UserDiscordID: userDiscordID,
+			UserDiscordID: userDiscordID, // Assurez-vous que cette ligne est correcte
 			ItemID:        itemID,
 			NextPurchase:  time.Time{}, // Définit un NextPurchase par défaut
 		}
@@ -117,26 +117,14 @@ func (ctrl *ShopController) GetUserShopCooldown(userDiscordID string, itemID uin
 }
 
 // SetUserShopCooldown définit ou met à jour le cooldown d'achat pour un utilisateur
-func (ctrl *ShopController) SetUserShopCooldown(userDiscordID string, itemID uint, nextPurchase time.Time) error {
-	var cooldown models.UserShopCooldown
-	result := ctrl.DB.First(&cooldown, "user_discord_id = ? AND item_id = ?", userDiscordID, itemID)
-
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		// Créer un nouvel enregistrement si aucun cooldown n'existe
-		cooldown = models.UserShopCooldown{
-			UserDiscordID: userDiscordID,
-			ItemID:        itemID,
-			NextPurchase:  nextPurchase,
-		}
-		return ctrl.DB.Create(&cooldown).Error
-	} else if result.Error != nil {
-		// Erreur lors de la récupération du cooldown
-		return result.Error
+func (controller *ShopController) SetUserShopCooldown(userID string, itemID uint, nextPurchase time.Time) error {
+	cooldown := &models.UserShopCooldown{
+		UserDiscordID: userID,
+		ItemID:        itemID,
+		NextPurchase:  nextPurchase,
 	}
-
-	// Sinon, mettre à jour l'enregistrement existant
-	cooldown.NextPurchase = nextPurchase
-	return ctrl.DB.Save(&cooldown).Error
+	result := controller.DB.Create(cooldown)
+	return result.Error
 }
 
 // UpdateUserShopCooldown met à jour le délai d'achat pour un utilisateur pour un article spécifique

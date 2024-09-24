@@ -10,8 +10,7 @@ import (
 type UserShopCooldown struct {
 	gorm.Model
 	ID            uint      `gorm:"primaryKey"` // Identifiant unique
-	UserDiscordID string    `gorm:"not null"`   // Clé étrangère vers User (ID Discord)
-	ItemID        uint      `gorm:"not null"`   // Clé étrangère vers ShopItem
-	NextPurchase  time.Time // Prochain moment où l'utilisateur pourra acheter l'article
-	ShopItem      ShopItem  `gorm:"foreignKey:ItemID"` // Relation avec ShopItem
+	UserDiscordID string    `gorm:"not null"`   // ID Discord de l'utilisateur
+	ItemID        uint      `gorm:"not null"`   // ID de l'article
+	NextPurchase  time.Time // Prochain moment d'achat
 }

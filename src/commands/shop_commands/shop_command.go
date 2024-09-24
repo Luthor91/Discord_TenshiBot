@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/controllers"
 	"github.com/Luthor91/Tenshi/models"
 	"github.com/Luthor91/Tenshi/services"
 	"github.com/bwmarrin/discordgo"
@@ -28,11 +27,13 @@ func ShopCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	userID := m.Author.ID
 
 	// Récupère les informations de l'utilisateur
-	userMoney, _ := services.NewUserService().GetMoney(userID)
-	userXP, _ := services.NewUserService().GetExperience(userID)
+	userService := services.NewUserService()
+	userMoney, _ := userService.GetMoney(userID)
+	userXP, _ := userService.GetExperience(userID)
 
 	// Récupérer les items de la base de données
-	options, err := services.NewShopService().GetShopItems()
+	shopService := services.NewShopService()
+	options, err := shopService.GetShopItems()
 	if err != nil {
 		log.Println("Erreur lors de la récupération des items:", err)
 		return
@@ -83,7 +84,8 @@ func ShopCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		// Recharger les cooldowns
-		cooldown, err := controllers.NewShopController().GetUserShopCooldown(userID, selectedOption.ID)
+		cooldownService := services.NewShopService()
+		cooldown, err := cooldownService.GetUserShopCooldown(userID, selectedOption.ID)
 		if err != nil {
 			log.Println("Erreur lors du rechargement des cooldowns:", err)
 			return
@@ -109,32 +111,37 @@ func ShopCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Vérifier l'argent et appliquer l'action
 		if userMoney >= int(selectedOption.Price) {
 			var err error
-			user, err := controllers.NewUserController().GetUserByDiscordID(userID)
+			user, err := userService.GetUserByDiscordID(userID)
+			if err != nil {
+				log.Println("Erreur lors de la récupération de l'utilisateur:", err)
+				return
+			}
+
 			// Appliquer les effets de l'achat
 			switch selectedOption.Name {
 			case "50 XP":
-				services.NewUserService().AddExperience(user, 50)
-				services.NewUserService().AddMoney(user, -100)
+				userService.AddExperience(user, 50)
+				userService.AddMoney(user, -100)
 				_, _ = s.ChannelMessageSend(m.ChannelID, "Vous avez acheté 50 XP pour 100 money.")
 			case "500 XP":
-				services.NewUserService().AddExperience(user, 500)
-				services.NewUserService().AddMoney(user, -1000)
+				userService.AddExperience(user, 500)
+				userService.AddMoney(user, -1000)
 				_, _ = s.ChannelMessageSend(m.ChannelID, "Vous avez acheté 500 XP pour 1000 money.")
 			case "XP":
 				xpToAdd := int(float64(userXP) * 0.10)
 				cost := float64(userMoney) * 0.30
-				services.NewUserService().AddExperience(user, xpToAdd)
-				services.NewUserService().AddMoney(user, -int(cost))
+				userService.AddExperience(user, xpToAdd)
+				userService.AddMoney(user, -int(cost))
 				_, _ = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous avez acheté %d XP pour %.2f money.", xpToAdd, cost))
 			case "Timeout":
 				services.NewItemService().AddItem(userID, "timeout", 1)
-				services.NewUserService().AddMoney(user, -5000)
+				userService.AddMoney(user, -5000)
 				_, _ = s.ChannelMessageSend(m.ChannelID, "Vous avez acheté un timeout de 5 minutes pour 5000 money.")
 			}
 
 			// Mettre à jour le cooldown après l'achat
 			cooldown.NextPurchase = now.Add(time.Duration(selectedOption.Cooldown) * time.Second)
-			err = controllers.NewShopController().SetUserShopCooldown(userID, selectedOption.ID, cooldown.NextPurchase)
+			err = cooldownService.SetUserShopCooldown(userID, selectedOption.ID, cooldown.NextPurchase)
 			if err != nil {
 				log.Println("Erreur lors de la mise à jour du cooldown:", err)
 			}
@@ -145,5 +152,4 @@ func ShopCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 		}
 	})
-
 }

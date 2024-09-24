@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	"github.com/Luthor91/Tenshi/controllers"
@@ -125,4 +126,24 @@ func (service *ShopService) GetShopCooldown(userDiscordID string, itemID uint) (
 
 	// Retourner le prochain moment où l'utilisateur pourra acheter l'article
 	return userCooldown.NextPurchase, nil
+}
+
+// GetUserShopCooldown récupère le cooldown d'achat pour un utilisateur donné et un item spécifique.
+func (s *ShopService) GetUserShopCooldown(userID string, itemID uint) (*models.UserShopCooldown, error) {
+	cooldown, err := controllers.NewShopController().GetUserShopCooldown(userID, itemID)
+	if err != nil {
+		log.Println("Erreur dans le service GetUserShopCooldown:", err)
+		return nil, err
+	}
+	return cooldown, nil
+}
+
+// SetUserShopCooldown met à jour le cooldown d'achat pour un utilisateur donné et un item spécifique.
+func (s *ShopService) SetUserShopCooldown(userID string, itemID uint, nextPurchaseTime time.Time) error {
+	err := controllers.NewShopController().SetUserShopCooldown(userID, itemID, nextPurchaseTime)
+	if err != nil {
+		log.Println("Erreur dans le service SetUserShopCooldown:", err)
+		return err
+	}
+	return nil
 }

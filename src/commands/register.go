@@ -61,6 +61,7 @@ func RegisterHandlers(discord *discordgo.Session) {
 	discord.AddHandler(money_commands.MoneyCommand)
 
 	discord.AddHandler(shop_commands.ShopCommand)
+	discord.AddHandler(shop_commands.BuyCommand)
 
 	// Commandes utilitaires
 	discord.AddHandler(utility_commands.ByeCommand)

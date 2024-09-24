@@ -22,11 +22,21 @@ func ExperienceCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	args := strings.Fields(m.Content)
-	if len(args) < 2 {
+
+	// Affiche l'aide si -h est spécifié
+	if len(args) > 1 && args[1] == "-h" {
 		s.ChannelMessageSend(m.ChannelID, "Utilisation : ?xp [-n <utilisateur>] [-r <quantité>] [-s <quantité>] [-a <quantité>] [-g] [-m]")
 		return
 	}
 
+	// Si aucun argument n'est fourni, affiche l'XP de l'utilisateur qui a exécuté la commande
+	if len(args) < 2 {
+		targetUserID := m.Author.ID // Définit l'utilisateur par défaut
+		handleGetXP(s, m, targetUserID)
+		return
+	}
+
+	// Parse les arguments pour obtenir l'utilisateur cible, la quantité d'XP, et l'action
 	targetUserID, xpAmount, action, err := parseXPArgs(args, m, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, err.Error())
