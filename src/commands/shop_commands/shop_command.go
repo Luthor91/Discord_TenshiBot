@@ -41,14 +41,10 @@ func ShopCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Prépare le message du shop
 	messageContent := "**Bienvenue dans le shop !**\n\n"
-	for i, option := range options {
-		if i == 2 {
-			xpToAdd := int(float64(userXP) * 0.10)
-			cost := float64(userMoney) * 0.30
-			messageContent += fmt.Sprintf("%s **Acheter %d %s pour %.2f money**\n", option.Emoji, xpToAdd, option.Name, cost)
-		} else {
-			messageContent += fmt.Sprintf("%s **Acheter %s pour %.2f money**\n", option.Emoji, option.Name, option.Price)
-		}
+	for _, option := range options {
+
+		messageContent += fmt.Sprintf("%s **Acheter %s pour %.2f money**\n", option.Emoji, option.Name, option.Price)
+
 	}
 
 	messageContent += fmt.Sprintf("\nVotre solde actuel : %d money\nVotre XP actuel : %d", userMoney, userXP)
@@ -129,7 +125,7 @@ func ShopCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 				_, _ = s.ChannelMessageSend(m.ChannelID, "Vous avez acheté 500 XP pour 1000 money.")
 			case "XP":
 				xpToAdd := int(float64(userXP) * 0.10)
-				cost := float64(userMoney) * 0.30
+				cost := float64(userMoney) * 0.05
 				userService.AddExperience(user, xpToAdd)
 				userService.AddMoney(user, -int(cost))
 				_, _ = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous avez acheté %d XP pour %.2f money.", xpToAdd, cost))
@@ -139,12 +135,14 @@ func ShopCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 				_, _ = s.ChannelMessageSend(m.ChannelID, "Vous avez acheté un timeout de 5 minutes pour 5000 money.")
 			}
 
-			// Mettre à jour le cooldown après l'achat
+			// Après l'achat réussi, mettez à jour le cooldown
 			cooldown.NextPurchase = now.Add(time.Duration(selectedOption.Cooldown) * time.Second)
 			err = cooldownService.SetUserShopCooldown(userID, selectedOption.ID, cooldown.NextPurchase)
 			if err != nil {
 				log.Println("Erreur lors de la mise à jour du cooldown:", err)
+				return
 			}
+
 		} else {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas assez de money.")
 			if err != nil {

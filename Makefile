@@ -15,8 +15,9 @@ else
 endif
 
 # Charger les variables d'environnement depuis le fichier .env
-ifneq (,$(wildcard .env))
-	include .env
+ifneq (,$(wildcard $(PROJECT_DIR)/.env))
+  include $(PROJECT_DIR)/.env
+  export
 endif
 
 # Cible pour preparer les modules Go
@@ -50,6 +51,28 @@ else
 		echo "Creation de la base de donnees : $(DB_NAME)"; \
 		$(CREATE_DB_CMD); \
 		echo "Base de donnees $(DB_NAME) creee avec succès."; \
+	fi
+endif
+
+# Cible pour supprimer la base de données
+reset:
+ifeq ($(OS),Windows_NT)
+	@if "$(DB_NAME)"=="" ( \
+		echo Erreur : La variable d'environnement DB_NAME n'est pas definie. ;\
+		exit 1 ;\
+	) else ( \
+		echo Suppression de la base de donnees : $(DB_NAME) ;\
+		psql -U postgres -c "DROP DATABASE IF EXISTS $(DB_NAME)";\
+		echo Base de donnees $(DB_NAME) supprimee avec succes. ;\
+	)
+else
+	@if [ -z "$(DB_NAME)" ]; then \
+		echo "Erreur : La variable d'environnement DB_NAME n'est pas definie."; \
+		exit 1; \
+	else \
+		echo "Suppression de la base de donnees : $(DB_NAME)"; \
+		psql -U postgres -c "DROP DATABASE IF EXISTS $(DB_NAME)"; \
+		echo "Base de donnees $(DB_NAME) supprimee avec succes."; \
 	fi
 endif
 
