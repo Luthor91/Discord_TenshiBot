@@ -5,20 +5,19 @@ import (
 	"time"
 
 	"github.com/Luthor91/Tenshi/controllers"
-	"github.com/Luthor91/Tenshi/database"
 	"github.com/Luthor91/Tenshi/models"
-	"gorm.io/gorm"
 )
 
 // ShopService est un service pour gérer les opérations liées aux achats en boutique
 type ShopService struct {
-	db *gorm.DB
+	shopController *controllers.ShopController
 }
 
 // NewShopService crée une nouvelle instance de ShopService
 func NewShopService() *ShopService {
+	shopController := controllers.NewShopController()
 	return &ShopService{
-		db: database.DB,
+		shopController: shopController,
 	}
 }
 
@@ -27,7 +26,7 @@ func (service *ShopService) LoadUserShopCooldowns(userDiscordID string) (map[uin
 	var userCooldowns []models.UserShopCooldown
 
 	// Chercher tous les cooldowns pour cet utilisateur
-	result := service.db.Where("user_discord_id = ?", userDiscordID).Find(&userCooldowns)
+	result := service.shopController.DB.Where("user_discord_id = ?", userDiscordID).Find(&userCooldowns)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -43,13 +42,16 @@ func (service *ShopService) LoadUserShopCooldowns(userDiscordID string) (map[uin
 
 // SetShopCooldown définit le cooldown pour un utilisateur sur un article spécifique
 func (service *ShopService) SetShopCooldown(userDiscordID string, itemID uint, nextPurchase time.Time) error {
-	// On vérifie si l'article existe dans la base de données
-	item, err := controllers.NewShopItemController().GetShopItemByID(itemID)
+	// Vérifier si l'article existe dans la base de données
+	item, err := service.shopController.GetShopItemByID(itemID)
 	if err != nil {
 		return err
 	}
+	if item == nil {
+		return errors.New("article non trouvé")
+	}
 
-	userCooldown, err := controllers.NewUserShopCooldownController().GetUserShopCooldown(userDiscordID, itemID)
+	userCooldown, err := service.shopController.GetUserShopCooldown(userDiscordID, itemID)
 	if err != nil {
 		return err
 	}
@@ -60,18 +62,21 @@ func (service *ShopService) SetShopCooldown(userDiscordID string, itemID uint, n
 		if !exists {
 			return errors.New("utilisateur non trouvé")
 		}
+
 		userCooldown = &models.UserShopCooldown{
-			UserDiscordID: userCooldown.UserDiscordID,
+			UserDiscordID: userDiscordID,
 			ItemID:        item.ID,
 			NextPurchase:  nextPurchase,
 		}
-		if err := service.db.Create(&userCooldown).Error; err != nil {
+
+		// Utiliser la méthode CreateUserShopCooldown pour l'enregistrer
+		if err := service.shopController.CreateUserShopCooldown(userCooldown); err != nil {
 			return err
 		}
 	} else {
 		// Mettre à jour le cooldown si l'utilisateur a déjà un enregistrement
 		userCooldown.NextPurchase = nextPurchase
-		if err := service.db.Save(&userCooldown).Error; err != nil {
+		if err := service.shopController.UpdateUserShopCooldown(userDiscordID, itemID, nextPurchase); err != nil {
 			return err
 		}
 	}
@@ -80,12 +85,14 @@ func (service *ShopService) SetShopCooldown(userDiscordID string, itemID uint, n
 }
 
 // IsCooldownExpired vérifie si le cooldown est expiré pour un utilisateur et un article spécifique
-func (service *ShopService) IsCooldownExpired(userID string, itemID uint) (bool, error) {
+func (service *ShopService) IsCooldownExpired(userDiscordID string, itemID uint) (bool, error) {
 	// Chercher l'enregistrement du cooldown pour cet utilisateur et cet article
-	var userCooldown models.UserShopCooldown
-	result := service.db.Where("user_id = ? AND item_id = ?", userID, itemID).First(&userCooldown)
+	userCooldown, err := service.shopController.GetUserShopCooldown(userDiscordID, itemID)
+	if err != nil {
+		return false, err
+	}
 
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	if userCooldown == nil {
 		// Aucun cooldown trouvé, l'utilisateur peut acheter l'article
 		return true, nil
 	}
@@ -96,32 +103,24 @@ func (service *ShopService) IsCooldownExpired(userID string, itemID uint) (bool,
 
 // GetShopItems récupère tous les items de la boutique
 func (service *ShopService) GetShopItems() ([]models.ShopItem, error) {
-	var items []models.ShopItem
-	if err := service.db.Where("deleted_at IS NULL").Find(&items).Error; err != nil {
-		return nil, err
-	}
-	return items, nil
+	return service.shopController.GetAllShopItems()
 }
 
 // GetShopItemByName récupère un item de la boutique par son nom
 func (service *ShopService) GetShopItemByName(name string) (*models.ShopItem, error) {
-	var item models.ShopItem
-	result := service.db.Where("name = ? AND deleted_at IS NULL", name).First(&item)
-
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, errors.New("item non trouvé")
-	}
-	return &item, result.Error
+	return service.shopController.GetShopItemByName(name)
 }
 
 // GetShopCooldown renvoie le temps restant avant que l'utilisateur puisse acheter à nouveau un article
-func (service *ShopService) GetShopCooldown(userID string, itemID uint) (time.Time, error) {
-	// Chercher l'enregistrement du cooldown pour cet utilisateur et cet article
-	var userCooldown models.UserShopCooldown
-	result := service.db.Where("user_id = ? AND item_id = ?", userID, itemID).First(&userCooldown)
+func (service *ShopService) GetShopCooldown(userDiscordID string, itemID uint) (time.Time, error) {
+	userCooldown, err := service.shopController.GetUserShopCooldown(userDiscordID, itemID)
+	if err != nil {
+		return time.Time{}, err
+	}
 
-	if result.Error != nil {
-		return time.Time{}, result.Error
+	if userCooldown == nil {
+		// Aucun cooldown trouvé
+		return time.Time{}, errors.New("aucun cooldown trouvé")
 	}
 
 	// Retourner le prochain moment où l'utilisateur pourra acheter l'article

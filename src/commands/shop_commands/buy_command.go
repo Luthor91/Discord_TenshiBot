@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/controllers"
 	"github.com/Luthor91/Tenshi/services"
 	"github.com/bwmarrin/discordgo"
 )
@@ -38,7 +37,7 @@ func BuyCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	userID := m.Author.ID
-	userMoney, err := services.NewUserService(controllers.NewUserController()).GetMoney(userID)
+	userMoney, err := services.NewUserService().GetMoney(userID)
 	if err != nil {
 		log.Println("Erreur lors de la récupération de l'argent de l'utilisateur:", err)
 		return
@@ -58,7 +57,7 @@ func BuyCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Appliquer l'achat
-	err = services.NewUserService(controllers.NewUserController()).UpdateMoney(userID, -totalCost)
+	err = services.NewUserService().UpdateMoney(userID, -totalCost)
 	if err != nil {
 		_, _ = s.ChannelMessageSend(m.ChannelID, "Erreur lors de la mise à jour de votre argent.")
 		log.Println("Erreur lors de la mise à jour de l'argent:", err)

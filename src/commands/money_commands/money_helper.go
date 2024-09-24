@@ -3,11 +3,11 @@ package money_commands
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"math/rand"
 	"time"
 
-	"github.com/Luthor91/Tenshi/api/discord"
 	"github.com/Luthor91/Tenshi/controllers"
 	"github.com/Luthor91/Tenshi/services"
 	"github.com/bwmarrin/discordgo"
@@ -26,13 +26,36 @@ func displayHelpMessage(s *discordgo.Session, channelID string) {
 }
 
 // Gérer la mention d'un utilisateur
-func handleMention(s *discordgo.Session, m *discordgo.MessageCreate) *discordgo.User {
-	if len(m.Mentions) > 0 {
-		return m.Mentions[0]
-	} else {
-		s.ChannelMessageSend(m.ChannelID, "Veuillez mentionner un utilisateur avec -n.")
+func handleTarget(s *discordgo.Session, m *discordgo.MessageCreate) *discordgo.User {
+	args := strings.Fields(m.Content)
+
+	if len(args) < 3 || args[1] != "-n" {
+		s.ChannelMessageSend(m.ChannelID, "Veuillez utiliser la commande avec -n suivi du pseudo, nom d'utilisateur ou mention.")
 		return nil
 	}
+
+	target := args[2]
+
+	for _, mention := range m.Mentions {
+		if mention.ID == target {
+			return mention
+		}
+	}
+
+	users, err := s.GuildMembers(m.GuildID, "", 100)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "Erreur lors de la récupération des membres.")
+		return nil
+	}
+
+	for _, user := range users {
+		if user.User.Username == target || fmt.Sprintf("%s#%s", user.User.Username, user.User.Discriminator) == target {
+			return user.User
+		}
+	}
+
+	s.ChannelMessageSend(m.ChannelID, "Utilisateur non trouvé.")
+	return nil
 }
 
 // Retirer de l'argent à un utilisateur
@@ -47,13 +70,13 @@ func handleRemoveMoney(s *discordgo.Session, m *discordgo.MessageCreate, args []
 		return
 	}
 
-	userMoney, err := services.NewUserService(controllers.NewUserController()).GetMoney(m.Author.ID)
+	userMoney, err := services.NewUserService().GetMoney(m.Author.ID)
 	if err != nil || userMoney < amount {
 		s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas assez d'argent pour retirer ce montant.")
 		return
 	}
 	newMoney := userMoney - amount
-	services.NewUserService(controllers.NewUserController()).SetMoney(m.Author.ID, newMoney)
+	services.NewUserService().SetMoney(m.Author.ID, newMoney)
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous avez retiré %d unités. Nouveau solde : %d", amount, newMoney))
 }
 
@@ -65,35 +88,29 @@ func handleDailyReward(s *discordgo.Session, m *discordgo.MessageCreate) {
 		s.ChannelMessageSend(m.ChannelID, "Erreur lors de la récupération de vos informations.")
 		return
 	}
-	canReceive, timeLeft := services.NewUserService(userController).CanReceiveDailyReward(user)
-	if !canReceive {
+	canReceive, timeLeft, err := services.NewUserService().CanReceiveDailyReward(user)
+	if !canReceive || err != nil {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous devez attendre encore %v avant de réclamer la prochaine récompense quotidienne.", timeLeft.Round(time.Minute)))
 		return
 	}
 
-	rand.Seed(time.Now().UnixNano())   // Initialisation du générateur de nombres aléatoires
-	randomAmount := rand.Intn(91) + 10 // Montant aléatoire entre 10 et 100
-	services.NewUserService(userController).UpdateDailyMoney(user, randomAmount)
+	randomAmount := rand.Intn(91) + 10
+	services.NewUserService().UpdateDailyMoney(user, randomAmount)
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous avez reçu %d unités aujourd'hui !", randomAmount))
 }
 
 // Afficher le solde d'un utilisateur
-func handleShowMoney(s *discordgo.Session, m *discordgo.MessageCreate) {
-	money, err := services.NewUserService(controllers.NewUserController()).GetMoney(m.Author.ID)
+func handleShowMoney(s *discordgo.Session, m *discordgo.MessageCreate, targetUser *discordgo.User) {
+	money, err := services.NewUserService().GetMoney(targetUser.ID)
 	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "Erreur lors de la récupération de votre solde.")
+		s.ChannelMessageSend(m.ChannelID, "Erreur lors de la récupération du solde.")
 		return
 	}
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous avez %d unités de monnaie.", money))
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s a %d unités de monnaie.", targetUser.Username, money))
 }
 
 // Donner de l'argent à un utilisateur
-func handleGiveMoney(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
-	targetUser := handleMention(s, m)
-	if targetUser == nil {
-		return
-	}
-
+func handleGiveMoney(s *discordgo.Session, m *discordgo.MessageCreate, args []string, targetUser *discordgo.User) {
 	if len(args) < 3 {
 		s.ChannelMessageSend(m.ChannelID, "Veuillez entrer un montant valide pour donner.")
 		return
@@ -105,23 +122,12 @@ func handleGiveMoney(s *discordgo.Session, m *discordgo.MessageCreate, args []st
 		return
 	}
 
-	services.NewUserService(controllers.NewUserController()).GiveMoney(m.Author.ID, targetUser.ID, amount)
+	services.NewUserService().GiveMoney(m.Author.ID, targetUser.ID, amount)
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous avez donné %d unités à %s.", amount, targetUser.Username))
 }
 
 // Définir l'argent d'un utilisateur (admin seulement)
-func handleSetMoney(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
-	isAdmin, err := discord.UserHasAdminRole(s, m.GuildID, m.Author.ID)
-	if err != nil || !isAdmin {
-		s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas la permission de définir la monnaie.")
-		return
-	}
-
-	targetUser := handleMention(s, m)
-	if targetUser == nil {
-		return
-	}
-
+func handleSetMoney(s *discordgo.Session, m *discordgo.MessageCreate, args []string, targetUser *discordgo.User) {
 	if len(args) < 3 {
 		s.ChannelMessageSend(m.ChannelID, "Veuillez entrer un montant valide pour définir l'argent.")
 		return
@@ -133,6 +139,13 @@ func handleSetMoney(s *discordgo.Session, m *discordgo.MessageCreate, args []str
 		return
 	}
 
-	services.NewUserService(controllers.NewUserController()).SetMoney(targetUser.ID, amount)
+	services.NewUserService().SetMoney(targetUser.ID, amount)
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("L'argent de %s a été défini à %d.", targetUser.Username, amount))
+}
+
+// handleShowUserBalance affiche le solde de l'utilisateur
+func handleShowUserBalance(s *discordgo.Session, m *discordgo.MessageCreate) {
+	userID := m.Author.ID
+	balance, _ := services.NewUserService().GetMoney(userID)
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%s>, votre solde est de %d.", userID, balance))
 }

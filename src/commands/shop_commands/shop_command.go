@@ -28,8 +28,8 @@ func ShopCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	userID := m.Author.ID
 
 	// Récupère les informations de l'utilisateur
-	userMoney, _ := services.NewUserService(controllers.NewUserController()).GetMoney(userID)
-	userXP, _ := services.NewUserService(controllers.NewUserController()).GetExperience(userID)
+	userMoney, _ := services.NewUserService().GetMoney(userID)
+	userXP, _ := services.NewUserService().GetExperience(userID)
 
 	// Récupérer les items de la base de données
 	options, err := services.NewShopService().GetShopItems()
@@ -83,7 +83,7 @@ func ShopCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		// Recharger les cooldowns
-		cooldown, err := controllers.NewUserShopCooldownController().GetUserShopCooldown(userID, selectedOption.ID)
+		cooldown, err := controllers.NewShopController().GetUserShopCooldown(userID, selectedOption.ID)
 		if err != nil {
 			log.Println("Erreur lors du rechargement des cooldowns:", err)
 			return
@@ -113,28 +113,28 @@ func ShopCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			// Appliquer les effets de l'achat
 			switch selectedOption.Name {
 			case "50 XP":
-				services.NewUserService(controllers.NewUserController()).AddExperience(user, 50)
-				services.NewUserService(controllers.NewUserController()).AddMoney(user, -100)
+				services.NewUserService().AddExperience(user, 50)
+				services.NewUserService().AddMoney(user, -100)
 				_, _ = s.ChannelMessageSend(m.ChannelID, "Vous avez acheté 50 XP pour 100 money.")
 			case "500 XP":
-				services.NewUserService(controllers.NewUserController()).AddExperience(user, 500)
-				services.NewUserService(controllers.NewUserController()).AddMoney(user, -1000)
+				services.NewUserService().AddExperience(user, 500)
+				services.NewUserService().AddMoney(user, -1000)
 				_, _ = s.ChannelMessageSend(m.ChannelID, "Vous avez acheté 500 XP pour 1000 money.")
 			case "XP":
 				xpToAdd := int(float64(userXP) * 0.10)
 				cost := float64(userMoney) * 0.30
-				services.NewUserService(controllers.NewUserController()).AddExperience(user, xpToAdd)
-				services.NewUserService(controllers.NewUserController()).AddMoney(user, -int(cost))
+				services.NewUserService().AddExperience(user, xpToAdd)
+				services.NewUserService().AddMoney(user, -int(cost))
 				_, _ = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous avez acheté %d XP pour %.2f money.", xpToAdd, cost))
 			case "Timeout":
 				services.NewItemService().AddItem(userID, "timeout", 1)
-				services.NewUserService(controllers.NewUserController()).AddMoney(user, -5000)
+				services.NewUserService().AddMoney(user, -5000)
 				_, _ = s.ChannelMessageSend(m.ChannelID, "Vous avez acheté un timeout de 5 minutes pour 5000 money.")
 			}
 
 			// Mettre à jour le cooldown après l'achat
 			cooldown.NextPurchase = now.Add(time.Duration(selectedOption.Cooldown) * time.Second)
-			err = controllers.NewUserShopCooldownController().SetUserShopCooldown(userID, selectedOption.ID, cooldown.NextPurchase)
+			err = controllers.NewShopController().SetUserShopCooldown(userID, selectedOption.ID, cooldown.NextPurchase)
 			if err != nil {
 				log.Println("Erreur lors de la mise à jour du cooldown:", err)
 			}

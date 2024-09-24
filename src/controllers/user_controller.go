@@ -172,8 +172,8 @@ func (ctrl *UserController) GiveMoney(fromUserID, toUserID string, moneyAmount i
 	return nil
 }
 
-// GiveXP transfère une quantité d'expérience d'un utilisateur à un autre
-func (ctrl *UserController) GiveXP(fromUserID, toUserID string, xpAmount int) error {
+// GiveExperience transfère une quantité d'expérience d'un utilisateur à un autre
+func (ctrl *UserController) GiveExperience(fromUserID, toUserID string, xpAmount int) error {
 	fromUser, err := ctrl.GetUserByDiscordID(fromUserID)
 	if err != nil {
 		return err
@@ -219,8 +219,8 @@ func (ctrl *UserController) SetAffinity(userID string, affinityAmount int) error
 	return ctrl.UpdateUser(user)
 }
 
-// SetXP définit un montant d'expérience pour un utilisateur
-func (ctrl *UserController) SetXP(userID string, xpAmount int) error {
+// SetExperience définit un montant d'expérience pour un utilisateur
+func (ctrl *UserController) SetExperience(userID string, xpAmount int) error {
 	user, err := ctrl.GetUserByDiscordID(userID)
 	if err != nil {
 		return err
@@ -241,8 +241,8 @@ func (ctrl *UserController) UpdateMoney(userID string, moneyAmount int) error {
 	return ctrl.UpdateUser(user)
 }
 
-// UpdateXP met à jour le montant d'expérience d'un utilisateur
-func (ctrl *UserController) UpdateXP(userID string, xpAmount int) error {
+// UpdateExperience met à jour le montant d'expérience d'un utilisateur
+func (ctrl *UserController) UpdateExperience(userID string, xpAmount int) error {
 	user, err := ctrl.GetUserByDiscordID(userID)
 	if err != nil {
 		return err
@@ -263,4 +263,42 @@ func (ctrl *UserController) AddUserIfNotExists(userID, username string) error {
 		return err
 	}
 	return nil
+}
+
+// GetMoney récupère le montant d'argent d'un utilisateur
+func (ctrl *UserController) GetMoney(userID string) (int, error) {
+	user, err := ctrl.GetUserByDiscordID(userID)
+	if err != nil {
+		return 0, err
+	}
+	return user.Money, nil
+}
+
+// GetExperience récupère le montant d'expérience d'un utilisateur
+func (ctrl *UserController) GetExperience(userID string) (int, error) {
+	user, err := ctrl.GetUserByDiscordID(userID)
+	if err != nil {
+		return 0, err
+	}
+	return user.Experience, nil
+}
+
+// GetAffinity récupère l'affinité d'un utilisateur
+func (ctrl *UserController) GetAffinity(userID string) (int, error) {
+	user, err := ctrl.GetUserByDiscordID(userID)
+	if err != nil {
+		return 0, err
+	}
+	return user.Affinity, nil
+}
+
+// GetScore récupère le score global d'un utilisateur (argent, expérience, affinité)
+func (ctrl *UserController) GetScore(userID string) (int, error) {
+	user, err := ctrl.GetUserByDiscordID(userID)
+	if err != nil {
+		return 0, err
+	}
+	// Exemple simple de calcul de score global (peut être modifié selon ta logique)
+	totalScore := user.Money + user.Experience + user.Affinity
+	return totalScore, nil
 }

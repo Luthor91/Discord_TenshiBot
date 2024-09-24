@@ -23,7 +23,9 @@ func ChannelCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	command := fmt.Sprintf("%schannel", config.AppConfig.BotPrefix)
-	if !strings.HasPrefix(m.Content, command) {
+	commandAlias := fmt.Sprintf("%schan", config.AppConfig.BotPrefix)
+
+	if !strings.HasPrefix(m.Content, command) && !strings.HasPrefix(m.Content, commandAlias) {
 		return
 	}
 

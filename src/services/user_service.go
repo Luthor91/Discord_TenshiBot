@@ -7,10 +7,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/Luthor91/Tenshi/controllers" // Importer le contrôleur
-	"github.com/Luthor91/Tenshi/database"
+	"github.com/Luthor91/Tenshi/api/discord"
+	"github.com/Luthor91/Tenshi/controllers"
 	"github.com/Luthor91/Tenshi/models"
-	"gorm.io/gorm"
+	"github.com/bwmarrin/discordgo"
 )
 
 // UserService est un service pour gérer les opérations liées aux utilisateurs
@@ -19,17 +19,17 @@ type UserService struct {
 }
 
 // NewUserService crée une nouvelle instance de UserService
-func NewUserService(controller *controllers.UserController) *UserService {
+func NewUserService() *UserService {
 	return &UserService{
-		userCtrl: controller,
+		userCtrl: controllers.NewUserController(),
 	}
 }
 
 ////////// GESTION DES UTILISATEURS //////////
 
 // AddUserIfNotExists ajoute un utilisateur à la base de données s'il n'existe pas déjà
-func (service *UserService) AddUserIfNotExists(userID, username string) error {
-	return service.userCtrl.AddUserIfNotExists(userID, username)
+func (service *UserService) AddUserIfNotExists(userDiscordID, username string) error {
+	return service.userCtrl.AddUserIfNotExists(userDiscordID, username)
 }
 
 // GetAllUsers utilise le UserController pour récupérer tous les utilisateurs
@@ -37,32 +37,18 @@ func (service *UserService) GetAllUsers() ([]models.User, error) {
 	return service.userCtrl.GetAllUsers()
 }
 
-// GetUserByID utilise le UserController pour récupérer un utilisateur par ID
-func (service *UserService) GetUserByID(userID uint) (*models.User, error) {
-	userPtr, err := service.userCtrl.GetUserByID(userID)
-	if err != nil {
-		return &models.User{}, err // Gérer l'erreur si nécessaire
-	}
-	return userPtr, nil // Déférencer le pointeur pour retourner un modèle User
-}
-
-// GetUserByDiscordID utilise le UserController pour récupérer un utilisateur par ID Discord
+// GetUserByDiscordID utilise le UserController pour récupérer un utilisateur par son ID Discord
 func (service *UserService) GetUserByDiscordID(userDiscordID string) (*models.User, error) {
-	userPtr, err := service.userCtrl.GetUserByDiscordID(userDiscordID)
-	if err != nil {
-		return &models.User{}, err // Gérer l'erreur si nécessaire
-	}
-	return userPtr, nil // Déférencer le pointeur pour retourner un modèle User
+	return service.userCtrl.GetUserByDiscordID(userDiscordID)
 }
 
 // GetUserRankAndScoreByCategory renvoie le rang et le score d'un utilisateur pour une catégorie spécifique
-func (service *UserService) GetUserRankAndScoreByCategory(userID string, category string) (int, int, bool, error) {
+func (service *UserService) GetUserRankAndScoreByCategory(userDiscordID string, category string) (int, int, error) {
 	users, err := service.GetAllUsers()
 	if err != nil {
-		return 0, 0, false, err
+		return 0, 0, err
 	}
 
-	// Fonction de score selon la catégorie
 	var scoreFunc func(models.User) int
 	switch category {
 	case "money":
@@ -76,29 +62,29 @@ func (service *UserService) GetUserRankAndScoreByCategory(userID string, categor
 			return (u.Money + u.Experience + u.Affinity) / 3
 		}
 	default:
-		return 0, 0, false, errors.New("invalid category")
+		return 0, 0, errors.New("invalid category")
 	}
 
 	for rank, user := range users {
-		if user.UserDiscordID == userID {
-			return rank + 1, scoreFunc(user), true, nil
+		if user.UserDiscordID == userDiscordID {
+			return rank + 1, scoreFunc(user), nil
 		}
 	}
-	return 0, 0, false, nil
+	return 0, 0, errors.New("user not found")
 }
 
 // GetUserRankAndScore renvoie le rang et le score combiné d'un utilisateur
-func (service *UserService) GetUserRankAndScore(userID string) (int, int, error) {
+func (service *UserService) GetUserRankAndScore(userDiscordID string) (int, int, error) {
 	users, err := service.GetAllUsers()
 	if err != nil {
 		return 0, 0, err
 	}
 	for rank, user := range users {
-		if user.UserDiscordID == userID {
+		if user.UserDiscordID == userDiscordID {
 			return rank + 1, user.Money + user.Experience + user.Affinity, nil
 		}
 	}
-	return 0, 0, nil
+	return 0, 0, errors.New("user not found")
 }
 
 // GetAllUsersByCategory renvoie tous les utilisateurs triés par une catégorie spécifique
@@ -133,21 +119,21 @@ func (service *UserService) GetAllUsersByCategory(category string) ([]models.Use
 ////////// GESTION DES RÉCOMPENSES QUOTIDIENNES //////////
 
 // CanReceiveDailyReward vérifie si l'utilisateur peut recevoir une récompense quotidienne
-func (service *UserService) CanReceiveDailyReward(user *models.User) (bool, time.Duration) {
+func (service *UserService) CanReceiveDailyReward(user *models.User) (bool, time.Duration, error) {
 	if user.LastDailyReward == "" {
-		return true, 0
+		return true, 0, nil
 	}
 
 	lastRewardTime, err := time.Parse(time.RFC3339, user.LastDailyReward)
 	if err != nil {
-		return true, 0
+		return true, 0, err
 	}
 
 	now := time.Now()
 	if now.Sub(lastRewardTime).Hours() >= 24 {
-		return true, 0
+		return true, 0, nil
 	}
-	return false, time.Until(lastRewardTime.Add(24 * time.Hour))
+	return false, time.Until(lastRewardTime.Add(24 * time.Hour)), nil
 }
 
 // UpdateDailyMoney met à jour la monnaie quotidienne et la date de la dernière récompense
@@ -157,7 +143,7 @@ func (service *UserService) UpdateDailyMoney(user *models.User, amount int) erro
 	return service.userCtrl.UpdateUser(user)
 }
 
-////////// GESTION DE L'EXPÉRIENCE ET AFFINITÉ //////////
+////////// GESTION DE L'EXPERIENCE ET AFFINITÉ //////////
 
 // AddExperience ajoute de l'expérience à un utilisateur
 func (service *UserService) AddExperience(user *models.User, amount int) error {
@@ -165,38 +151,19 @@ func (service *UserService) AddExperience(user *models.User, amount int) error {
 	return service.userCtrl.UpdateUser(user)
 }
 
-// GetExperience renvoie l'expérience d'un utilisateur
-func (service *UserService) GetExperience(userID string) (int, bool) {
-	user, err := service.userCtrl.GetUserByDiscordID(userID)
-	if err != nil {
-		log.Printf("Erreur lors de la récupération de l'utilisateur %s: %v", userID, err)
-		return 0, false
-	}
-	return user.Experience, true
-}
-
 // SetExperience définit la quantité d'expérience pour un utilisateur
-func (service *UserService) SetExperience(userID string, xp int) error {
-	var user models.User
-
-	if err := database.DB.Where("user_discord_id = ?", userID).First(&user).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return fmt.Errorf("utilisateur non trouvé avec ID Discord: %s", userID)
-		}
-		return err
-	}
-
-	user.Experience = xp
-	if err := database.DB.Save(&user).Error; err != nil {
-		return err
-	}
-	log.Printf("Expérience mise à jour pour l'utilisateur %s : %d", userID, xp)
-	return nil
+func (service *UserService) SetExperience(userDiscordID string, xp int) error {
+	return service.userCtrl.SetExperience(userDiscordID, xp)
 }
 
-// SetAffinity met à jour la quantité d'affinité d'un utilisateur
-func (service *UserService) SetAffinity(userID string, affinityAmount int) error {
-	return service.userCtrl.SetAffinity(userID, affinityAmount)
+// GetExperience renvoie l'expérience d'un utilisateur
+func (service *UserService) GetExperience(userDiscordID string) (int, error) {
+	return service.userCtrl.GetExperience(userDiscordID)
+}
+
+// SetAffinity met à jour l'affinité d'un utilisateur
+func (service *UserService) SetAffinity(userDiscordID string, affinityAmount int) error {
+	return service.userCtrl.SetAffinity(userDiscordID, affinityAmount)
 }
 
 ////////// GESTION DE LA MONNAIE //////////
@@ -208,46 +175,66 @@ func (service *UserService) AddMoney(user *models.User, amount int) error {
 }
 
 // GetMoney renvoie la quantité de monnaie d'un utilisateur
-func (service *UserService) GetMoney(discordID string) (int, error) {
-	user, err := service.userCtrl.GetUserByDiscordID(discordID)
-	if err != nil {
-		return 0, err
-	}
-	return user.Money, nil
+func (service *UserService) GetMoney(userDiscordID string) (int, error) {
+	return service.userCtrl.GetMoney(userDiscordID)
 }
 
 // UpdateMoney ajoute de l'argent à l'utilisateur
-func (service *UserService) UpdateMoney(userID string, moneyAmount int) error {
-	return service.userCtrl.UpdateMoney(userID, moneyAmount)
+func (service *UserService) UpdateMoney(userDiscordID string, moneyAmount int) error {
+	return service.userCtrl.UpdateMoney(userDiscordID, moneyAmount)
 }
 
 // SetMoney met à jour la quantité d'argent d'un utilisateur
-func (service *UserService) SetMoney(userID string, moneyAmount int) error {
-	return service.userCtrl.SetMoney(userID, moneyAmount)
+func (service *UserService) SetMoney(userDiscordID string, moneyAmount int) error {
+	return service.userCtrl.SetMoney(userDiscordID, moneyAmount)
 }
 
 ////////// TRANSFERTS ENTRE UTILISATEURS //////////
 
-// GiveXP transfère une quantité d'XP d'un utilisateur à un autre
-func (service *UserService) GiveXP(fromUserID, toUserID string, xpAmount int) error {
-	return service.userCtrl.GiveXP(fromUserID, toUserID, xpAmount)
+// GiveExperience transfère une quantité d'Experience d'un utilisateur à un autre
+func (service *UserService) GiveExperience(fromUserDiscordID, toUserDiscordID string, xpAmount int) error {
+	return service.userCtrl.GiveExperience(fromUserDiscordID, toUserDiscordID, xpAmount)
 }
 
 // GiveMoney transfère une quantité d'argent d'un utilisateur à un autre
-func (service *UserService) GiveMoney(fromUserID, toUserID string, moneyAmount int) error {
-	return service.userCtrl.GiveMoney(fromUserID, toUserID, moneyAmount)
+func (service *UserService) GiveMoney(fromUserDiscordID, toUserDiscordID string, moneyAmount int) error {
+	return service.userCtrl.GiveMoney(fromUserDiscordID, toUserDiscordID, moneyAmount)
 }
 
-// //////// CALCUL DU SCORE GENERAL //////////
+////////// CALCUL DU SCORE GENERAL //////////
 
-// GetUserScore renvoie le score total (somme de l'argent, de l'affinité et de l'expérience) d'un utilisateur
-func (service *UserService) GetScore(userID string) (int, error) {
-	user, err := service.userCtrl.GetUserByDiscordID(userID)
-	if err != nil {
-		return 0, fmt.Errorf("erreur lors de la récupération de l'utilisateur : %v", err)
+// GetScore renvoie le score total pour un utilisateur
+func (service *UserService) GetScore(userDiscordID string) (int, error) {
+	return service.userCtrl.GetScore(userDiscordID)
+}
+
+// GetAffinity renvoie l'affinité pour un utilisateur
+func (service *UserService) GetAffinity(userDiscordID string) (int, error) {
+	return service.userCtrl.GetAffinity(userDiscordID)
+}
+
+// UserApplyEffects vérifie l'effet à appliquer sur l'utilisateur, ici uniquement le timeout
+func (service *UserService) UserApplyEffects(s *discordgo.Session, guildID string, target *models.User) error {
+	// Vérifier si l'utilisateur a un timeout à appliquer
+	if target.TimeoutEnd.IsZero() {
+		// Pas de timeout à appliquer
+		return nil
 	}
 
-	// Calculer le score total en additionnant l'argent, l'affinité et l'expérience
-	totalScore := user.Money + user.Affinity + user.Experience
-	return totalScore, nil
+	// Calculer la durée restante avant la fin du timeout
+	duration := time.Until(target.TimeoutEnd)
+
+	// Si la durée est positive (timeout encore valide)
+	if duration > 0 {
+		// Appliquer le timeout avec la durée restante
+		err := discord.TimeoutUser(s, guildID, target.UserDiscordID, duration)
+		if err != nil {
+			return fmt.Errorf("erreur lors de l'application du timeout : %v", err)
+		}
+		log.Printf("Timeout appliqué à l'utilisateur %s pour une durée de %s", target.UserDiscordID, duration)
+	} else {
+		log.Printf("Le timeout de l'utilisateur %s est expiré, aucune action n'a été prise.", target.UserDiscordID)
+	}
+
+	return nil
 }

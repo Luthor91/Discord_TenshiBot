@@ -14,8 +14,10 @@ func ExperienceCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	prefix := fmt.Sprintf("%sxp", config.AppConfig.BotPrefix)
-	if !strings.HasPrefix(m.Content, prefix) {
+	command := fmt.Sprintf("%sexperience", config.AppConfig.BotPrefix)
+	commandAlias := fmt.Sprintf("%sxp", config.AppConfig.BotPrefix)
+
+	if !strings.HasPrefix(m.Content, command) && !strings.HasPrefix(m.Content, commandAlias) {
 		return
 	}
 

@@ -19,6 +19,8 @@ type User struct {
 	RankMoney       int
 	RankExperience  int
 	RankAffinity    int
-	Items           []Item `gorm:"foreignKey:UserDiscordID;references:UserDiscordID"` // Référencer la bonne colonne
+	LastRob         time.Time // Temps du dernier vol
+	LastInvest      time.Time // Temps du dernier investissement
+	Items           []Item    `gorm:"foreignKey:UserDiscordID;references:UserDiscordID"` // Référencer la bonne colonne
 	TimeoutEnd      time.Time
 }

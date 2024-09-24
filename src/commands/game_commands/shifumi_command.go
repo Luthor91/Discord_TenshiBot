@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/controllers"
 	"github.com/Luthor91/Tenshi/services"
 	"github.com/bwmarrin/discordgo"
 )
@@ -61,7 +60,7 @@ func ShifumiCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		(playerChoice == "ciseaux" && botChoiceStr == "feuille") {
 		result = "Vous avez gagné !"
 		// Récompense de 10 money
-		userService := services.NewUserService(controllers.NewUserController())
+		userService := services.NewUserService()
 		user, _ := userService.GetUserByDiscordID(m.Author.ID)
 		userService.AddMoney(user, 10)
 	} else {

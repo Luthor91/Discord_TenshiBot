@@ -60,8 +60,22 @@ func ItemCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, "Erreur lors de l'utilisation de l'item.")
 			return
 		}
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous avez utilisé %d %s sur <@%s>.", quantity, itemName, targetID))
 
+		// Récupérer les informations de l'utilisateur cible (target) depuis la base de données
+		targetUser, err := services.NewUserService().GetUserByDiscordID(targetID)
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, "Impossible de récupérer les informations de l'utilisateur.")
+			return
+		}
+
+		// Appliquer les effets de l'item, ici timeout
+		err = services.NewUserService().UserApplyEffects(s, m.GuildID, targetUser)
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, "Erreur lors de l'application des effets de l'item.")
+			return
+		}
+
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous avez utilisé %d %s sur <@%s>.", quantity, itemName, targetID))
 		// Action : Jeter un item
 	} else if action == "-r" {
 		err = services.NewItemService().RemoveItem(m.Author.ID, itemName, quantity)

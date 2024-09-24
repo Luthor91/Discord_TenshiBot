@@ -1,10 +1,12 @@
 package moderation_commands
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/Luthor91/Tenshi/api/discord"
+	"github.com/Luthor91/Tenshi/config"
 	"github.com/Luthor91/Tenshi/utils"
 	"github.com/bwmarrin/discordgo"
 )
@@ -22,11 +24,13 @@ func ModerateUserCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Vérifier si la commande commence par "?user"
-	if !strings.HasPrefix(m.Content, "?user") {
+	// Vérifier si la commande
+	command := fmt.Sprintf("%suser", config.AppConfig.BotPrefix)
+	commandAlias := fmt.Sprintf("%susr", config.AppConfig.BotPrefix)
+
+	if !strings.HasPrefix(m.Content, command) && !strings.HasPrefix(m.Content, commandAlias) {
 		return
 	}
-
 	// Parsing command
 	args := strings.Fields(m.Content)
 
@@ -37,24 +41,6 @@ func ModerateUserCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Si aucun argument n'est renseigné, afficher un message explicatif
-	if len(parsedArgs) == 0 {
-		s.ChannelMessageSend(m.ChannelID, "Arguments possibles :\n"+
-			"-n [user]: mentionner l'utilisateur\n"+
-			"-b [reason]: bannir l'utilisateur avec une raison\n"+
-			"-w [reason]: avertir l'utilisateur avec une raison\n"+
-			"-k [reason]: expulser l'utilisateur avec une raison\n"+
-			"-m [duration]: mettre l'utilisateur en sourdine pour une durée\n"+
-			"-d [duration]: rendre l'utilisateur sourd pour une durée\n"+
-			"-to [duration]: mettre l'utilisateur en timeout pour une durée\n"+
-			"-mv [channel]: déplacer l'utilisateur dans un canal spécifique\n"+
-			"-t [duration]: durée de l'action (pour mute, deafen, timeout)\n"+
-			"-r: réinitialiser tous les statuts de l'utilisateur\n"+
-			"-rw: réinitialiser les avertissements de l'utilisateur")
-		return
-	}
-
-	// Récupérer les valeurs de parsedArgs
 	// Si aucun argument n'est renseigné, afficher un message explicatif
 	if len(parsedArgs) == 0 {
 		s.ChannelMessageSend(m.ChannelID, "Arguments possibles :\n"+
@@ -128,19 +114,19 @@ func ModerateUserCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Effectuer l'action spécifiée
 	switch action {
 	case "ban":
-		banUser(s, m, userID, reason)
+		discord.BanUser(s, m, userID, reason)
 	case "warn":
 		warnUser(s, m, userID, reason)
 	case "kick":
-		kickUser(s, m, userID, reason)
+		discord.KickUser(s, m, userID, reason)
 	case "mute":
-		muteUser(s, m, userID, actionTime, reason)
+		discord.MuteUser(s, m, userID, actionTime, reason)
 	case "deafen":
-		deafenUser(s, m, userID, actionTime, reason)
+		discord.DeafenUser(s, m, userID, actionTime, reason)
 	case "timeout":
-		timeoutUser(s, m, userID, actionTime, reason)
+		discord.TimeoutUser(s, m.GuildID, userID, actionTime)
 	case "move":
-		moveUser(s, m, userID, targetChannel)
+		discord.MoveUser(s, m, userID, targetChannel)
 	default:
 		s.ChannelMessageSend(m.ChannelID, "Action inconnue.")
 	}

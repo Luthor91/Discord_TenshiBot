@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/controllers"
 	"github.com/Luthor91/Tenshi/services"
 	"github.com/bwmarrin/discordgo"
 )
@@ -44,7 +43,7 @@ func BetCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Créer une instance de UserService
-	userService := services.NewUserService(controllers.NewUserController())
+	userService := services.NewUserService()
 
 	// Récupérer les informations de l'utilisateur
 	userID := m.Author.ID

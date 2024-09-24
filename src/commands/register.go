@@ -3,6 +3,7 @@ package commands
 import (
 	"github.com/Luthor91/Tenshi/commands/affinity_commands"
 	"github.com/Luthor91/Tenshi/commands/channel_commands"
+	"github.com/Luthor91/Tenshi/commands/daily_commands"
 	"github.com/Luthor91/Tenshi/commands/experience_commands"
 	"github.com/Luthor91/Tenshi/commands/game_commands"
 	"github.com/Luthor91/Tenshi/commands/item_commands"
@@ -11,6 +12,7 @@ import (
 	"github.com/Luthor91/Tenshi/commands/moderation_commands"
 	"github.com/Luthor91/Tenshi/commands/money_commands"
 	"github.com/Luthor91/Tenshi/commands/ranking_commands"
+	"github.com/Luthor91/Tenshi/commands/shop_commands"
 	"github.com/Luthor91/Tenshi/commands/stat_commands"
 	"github.com/Luthor91/Tenshi/commands/utility_commands"
 	"github.com/Luthor91/Tenshi/commands/word_commands"
@@ -23,7 +25,7 @@ import (
 // RegisterHandlers enregistre les différentes commandes du bot
 func RegisterHandlers(discord *discordgo.Session) {
 	// Créez les services nécessaires
-	userServices := services.NewUserService(controllers.NewUserController())
+	userServices := services.NewUserService()
 	affinityService := services.NewAffinityService(discord)
 	logController := controllers.NewLogController() // Instancier LogController
 	logService := services.NewLogService(logController)
@@ -58,6 +60,8 @@ func RegisterHandlers(discord *discordgo.Session) {
 	// Commandes de monnaie
 	discord.AddHandler(money_commands.MoneyCommand)
 
+	discord.AddHandler(shop_commands.ShopCommand)
+
 	// Commandes utilitaires
 	discord.AddHandler(utility_commands.ByeCommand)
 	discord.AddHandler(utility_commands.HelpCommand)
@@ -65,6 +69,9 @@ func RegisterHandlers(discord *discordgo.Session) {
 	discord.AddHandler(utility_commands.CalculateCommand)
 	discord.AddHandler(utility_commands.PingCommand)
 	discord.AddHandler(utility_commands.ReminderCommand)
+
+	// Commandes ponctuelles
+	discord.AddHandler(daily_commands.DailyCommand)
 
 	// Commandes d'articles
 	discord.AddHandler(item_commands.ItemCommand)
@@ -79,6 +86,9 @@ func RegisterHandlers(discord *discordgo.Session) {
 	discord.AddHandler(game_commands.BetCommand)
 	discord.AddHandler(game_commands.GuessCommand)
 	discord.AddHandler(game_commands.ShifumiCommand)
+	discord.AddHandler(game_commands.InvestCommand)
+	discord.AddHandler(game_commands.CollectInvestCommand)
+	discord.AddHandler(game_commands.RobCommand)
 
 	// Commandes LOL
 	discord.AddHandler(lol_commands.ChampionRotationCommand)

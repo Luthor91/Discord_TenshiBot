@@ -1,4 +1,4 @@
-PROJECT_DIR := $(CURDIR)
+PROJECT_DIR := $(CURDIR)/src
 EXEC := Bot_Tenshi
 
 # Definir les variables d'extension et de commande en fonction du système d'exploitation

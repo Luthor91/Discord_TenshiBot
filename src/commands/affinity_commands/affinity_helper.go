@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/Luthor91/Tenshi/api/discord"
-	"github.com/Luthor91/Tenshi/controllers"
 	"github.com/Luthor91/Tenshi/services"
 	"github.com/bwmarrin/discordgo"
 )
@@ -89,7 +88,7 @@ func handleRemoveAffinity(s *discordgo.Session, m *discordgo.MessageCreate, user
 		return
 	}
 	newAffinity := user.Affinity - amount
-	err := services.NewUserService(controllers.NewUserController()).SetAffinity(userID, newAffinity)
+	err := services.NewUserService().SetAffinity(userID, newAffinity)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Erreur lors du retrait d'affinité")
 		return
@@ -99,7 +98,7 @@ func handleRemoveAffinity(s *discordgo.Session, m *discordgo.MessageCreate, user
 
 // handleSetAffinity définit une quantité d'affinité pour l'utilisateur spécifié
 func handleSetAffinity(s *discordgo.Session, m *discordgo.MessageCreate, userID string, amount int) {
-	err := services.NewUserService(controllers.NewUserController()).SetAffinity(userID, amount)
+	err := services.NewUserService().SetAffinity(userID, amount)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Erreur lors de la définition de l'affinité")
 		return
@@ -115,7 +114,7 @@ func handleAddAffinity(s *discordgo.Session, m *discordgo.MessageCreate, userID 
 		return
 	}
 	newAffinity := user.Affinity + amount
-	err := services.NewUserService(controllers.NewUserController()).SetAffinity(userID, newAffinity)
+	err := services.NewUserService().SetAffinity(userID, newAffinity)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Erreur lors de l'ajout d'affinité")
 		return

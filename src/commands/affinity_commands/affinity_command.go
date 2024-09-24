@@ -14,8 +14,10 @@ func AffinityCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	prefix := fmt.Sprintf("%saffinity", config.AppConfig.BotPrefix)
-	if !strings.HasPrefix(m.Content, prefix) {
+	command := fmt.Sprintf("%saffinity", config.AppConfig.BotPrefix)
+	commandAlias := fmt.Sprintf("%saff", config.AppConfig.BotPrefix)
+
+	if !strings.HasPrefix(m.Content, command) && !strings.HasPrefix(m.Content, commandAlias) {
 		return
 	}
 

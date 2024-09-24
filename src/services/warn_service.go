@@ -18,9 +18,9 @@ type WarnService struct {
 }
 
 // NewWarnService crée un nouveau WarnService avec la session Discord et l'ID du serveur
-func NewWarnService(warnController *controllers.WarnController, discordSession *discordgo.Session, guildID string) *WarnService {
+func NewWarnService(discordSession *discordgo.Session, guildID string) *WarnService {
 	return &WarnService{
-		warnController: warnController,
+		warnController: controllers.NewWarnController(),
 		discordSession: discordSession, // Ajoute la session Discord
 		guildID:        guildID,        // Ajoute l'ID du serveur Discord
 	}

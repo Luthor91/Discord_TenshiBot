@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/controllers"
 	"github.com/Luthor91/Tenshi/services"
 	"github.com/bwmarrin/discordgo"
 )
@@ -45,7 +44,7 @@ func GuessCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if guess == target {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Bravo ! Vous avez deviné le bon nombre : %d.", target))
 		// Récompense de 10 money
-		userService := services.NewUserService(controllers.NewUserController())
+		userService := services.NewUserService()
 		user, _ := userService.GetUserByDiscordID(m.Author.ID)
 		userService.AddMoney(user, 10)
 	} else {

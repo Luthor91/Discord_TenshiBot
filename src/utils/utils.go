@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strconv"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 func PrintMemoryUsage(intervalSeconds int) {
@@ -56,4 +58,9 @@ func CheckErr(e error) {
 	if e != nil {
 		log.Fatalf("Erreur: %v", e)
 	}
+}
+
+// Réponse d'erreur standard pour l'envoi de messages
+func SendErrorMessage(s *discordgo.Session, channelID, errMessage string) {
+	s.ChannelMessageSend(channelID, fmt.Sprintf("Erreur : %s", errMessage))
 }

@@ -3,8 +3,8 @@ package moderation_commands
 import (
 	"errors"
 	"fmt"
-	"time"
 
+	"github.com/Luthor91/Tenshi/services"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -35,67 +35,18 @@ func parseArgs(args []string) (map[string]string, error) {
 	return parsedArgs, nil
 }
 
-// Helper functions for action handling
-func banUser(s *discordgo.Session, m *discordgo.MessageCreate, userID, reason string) {
-	err := s.GuildBanCreateWithReason(m.GuildID, userID, reason, 0)
-	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "Erreur lors du bannissement de l'utilisateur.")
-	} else {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Utilisateur %s banni avec succès.", userID))
-	}
-}
-
 func warnUser(s *discordgo.Session, m *discordgo.MessageCreate, userID, reason string) {
+	// Appeler la méthode AddWarn du WarnService pour ajouter un avertissement
+	warnService := services.NewWarnService(s, m.GuildID)
+	err := warnService.AddWarn(userID, reason, m.Author.ID) // m.Author.ID pour l'admin qui donne l'avertissement
+	if err != nil {
+		// Gérer l'erreur et envoyer un message dans le canal
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Erreur lors de l'envoi de l'avertissement à l'utilisateur %s : %v", userID, err))
+		return
+	}
+
+	// Si tout se passe bien, envoyer un message de confirmation
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Avertissement envoyé à l'utilisateur %s : %s", userID, reason))
-}
-
-func kickUser(s *discordgo.Session, m *discordgo.MessageCreate, userID, reason string) {
-	err := s.GuildMemberDeleteWithReason(m.GuildID, userID, reason)
-	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "Erreur lors du kick de l'utilisateur.")
-	} else {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Utilisateur %s kické avec succès.", userID))
-	}
-}
-
-func muteUser(s *discordgo.Session, m *discordgo.MessageCreate, userID string, duration time.Duration, reason string) {
-	err := s.GuildMemberMute(m.GuildID, userID, true)
-	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "Erreur lors du mute de l'utilisateur.")
-		return
-	}
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Utilisateur %s mute pour %s : %s", userID, duration.String(), reason))
-	// Optionally, schedule unmute after duration
-	time.AfterFunc(duration, func() {
-		s.GuildMemberMute(m.GuildID, userID, false)
-	})
-}
-
-func deafenUser(s *discordgo.Session, m *discordgo.MessageCreate, userID string, duration time.Duration, reason string) {
-	err := s.GuildMemberDeafen(m.GuildID, userID, true)
-	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "Erreur lors du deafen de l'utilisateur.")
-		return
-	}
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Utilisateur %s deafen pour %s : %s", userID, duration.String(), reason))
-	// Optionally, schedule undeafen after duration
-	time.AfterFunc(duration, func() {
-		s.GuildMemberDeafen(m.GuildID, userID, false)
-	})
-}
-
-func timeoutUser(s *discordgo.Session, m *discordgo.MessageCreate, userID string, duration time.Duration, reason string) {
-	// Implement timeout logic here (DiscordGo does not natively support timeout yet)
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Timeout de l'utilisateur %s pour %s : %s", userID, duration.String(), reason))
-}
-
-func moveUser(s *discordgo.Session, m *discordgo.MessageCreate, userID, targetChannel string) {
-	err := s.GuildMemberMove(m.GuildID, userID, &targetChannel)
-	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "Erreur lors du déplacement de l'utilisateur.")
-	} else {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Utilisateur %s déplacé avec succès.", userID))
-	}
 }
 
 func resetAllUserStatus(s *discordgo.Session, m *discordgo.MessageCreate, userID string) {
@@ -104,6 +55,15 @@ func resetAllUserStatus(s *discordgo.Session, m *discordgo.MessageCreate, userID
 }
 
 func resetUserWarnings(s *discordgo.Session, m *discordgo.MessageCreate, userID string) {
-	// Implement reset warnings logic
+	// Réinitialiser les avertissements de l'utilisateur
+	warnService := services.NewWarnService(s, m.GuildID)
+
+	err := warnService.ResetWarns(userID)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Erreur lors de la réinitialisation des avertissements de l'utilisateur %s: %v", userID, err))
+		return
+	}
+
+	// Confirmer que les avertissements ont été réinitialisés
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Avertissements de l'utilisateur %s réinitialisés.", userID))
 }

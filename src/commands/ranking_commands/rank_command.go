@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/controllers"
 	"github.com/Luthor91/Tenshi/services"
 	"github.com/bwmarrin/discordgo"
 )
@@ -31,24 +30,18 @@ func RankCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		var rank int
 		var score int
-		var found bool
 
 		switch category {
 		case "money":
-			rank, score, found, _ = services.NewUserService(controllers.NewUserController()).GetUserRankAndScoreByCategory(userID, "money")
+			rank, score, _ = services.NewUserService().GetUserRankAndScoreByCategory(userID, "money")
 		case "affinity":
-			rank, score, found, _ = services.NewUserService(controllers.NewUserController()).GetUserRankAndScoreByCategory(userID, "affinity")
+			rank, score, _ = services.NewUserService().GetUserRankAndScoreByCategory(userID, "affinity")
 		case "xp":
-			rank, score, found, _ = services.NewUserService(controllers.NewUserController()).GetUserRankAndScoreByCategory(userID, "xp")
+			rank, score, _ = services.NewUserService().GetUserRankAndScoreByCategory(userID, "xp")
 		case "general":
-			rank, score, found, _ = services.NewUserService(controllers.NewUserController()).GetUserRankAndScoreByCategory(userID, "general")
+			rank, score, _ = services.NewUserService().GetUserRankAndScoreByCategory(userID, "general")
 		default:
 			s.ChannelMessageSend(m.ChannelID, "Type de classement invalide. Choisissez parmi money, affinity, xp, ou general.")
-			return
-		}
-
-		if !found {
-			s.ChannelMessageSend(m.ChannelID, "Erreur lors de la récupération de votre rang.")
 			return
 		}
 
