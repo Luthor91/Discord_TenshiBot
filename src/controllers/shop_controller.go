@@ -124,6 +124,7 @@ func (controller *ShopController) SetUserShopCooldown(userID string, itemID uint
 		NextPurchase:  nextPurchase,
 	}
 	result := controller.DB.Create(cooldown)
+
 	return result.Error
 }
 
