@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Luthor91/Tenshi/api/discord"
 	"github.com/Luthor91/Tenshi/config"
@@ -11,6 +12,9 @@ import (
 	"github.com/Luthor91/Tenshi/utils"
 	"github.com/bwmarrin/discordgo"
 )
+
+// Structure temporaire pour stocker les modifications d'XP
+var tempXPMap = make(map[string]int) // Clé: userID, Valeur: changement temporaire d'XP
 
 // XPCommand gère les opérations d'expérience pour les utilisateurs
 func ExperienceCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -28,161 +32,147 @@ func ExperienceCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Extraire les arguments de la commande
 	parsedArgs, err := discord.ExtractArguments(m.Content, command)
 	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "Utilisation : ?xp [-n <utilisateur>] [-r <quantité>] [-s <quantité>] [-a <quantité>] [-g] [-m]")
+		s.ChannelMessageSend(m.ChannelID, "Utilisation : ?xp [-n <utilisateur>] [-r <quantité>] [-s <quantité>] [-a <quantité>] [-g] [-m] [-t] [-v]")
 		return
 	}
 
-	// Affiche l'aide si -h est spécifié
-	for _, arg := range parsedArgs {
-		if arg.Arg == "-h" {
-			s.ChannelMessageSend(m.ChannelID, "Utilisation : ?xp [-n <utilisateur>] [-r <quantité>] [-s <quantité>] [-a <quantité>] [-g] [-m]")
-			return
-		}
-	}
-
-	// Si aucun argument n'est fourni, affiche l'XP de l'utilisateur qui a exécuté la commande
-	if len(parsedArgs) == 0 {
-		handleGetXP(s, m, m.Author.ID)
-		return
-	}
-
-	isMod, _ := discord.UserHasModeratorRole(s, m.GuildID, m.Author.ID)
-
-	// Variables pour stocker les informations sur l'utilisateur cible et l'action
+	// Variables pour les actions et options
 	var targetUserID string
 	var xpAmount int
 	var action string
+	var verbose, temporary bool
 
-	// Analyser les arguments extraits
+	// Affiche l'aide si -h est spécifié
 	for _, arg := range parsedArgs {
 		switch arg.Arg {
+		case "-h":
+			s.ChannelMessageSend(m.ChannelID, "Utilisation : ?xp [-n <utilisateur>] [-r <quantité>] [-s <quantité>] [-a <quantité>] [-g] [-m] [-t] [-v]")
+			return
+		case "-v":
+			verbose = true
+		case "-t":
+			temporary = true
 		case "-n":
 			targetUserID = discord.HandleTarget(s, m, arg.Value).ID
 		case "-r", "-s", "-a":
 			if xpAmountValue, err := strconv.Atoi(arg.Value); err == nil {
 				xpAmount = xpAmountValue
 			} else {
-				s.ChannelMessageSend(m.ChannelID, "Quantité d'XP invalide.")
+				if verbose {
+					s.ChannelMessageSend(m.ChannelID, "Quantité d'XP invalide.")
+				}
 				return
 			}
 			if arg.Arg == "-r" {
-				if isMod || targetUserID == m.Author.ID {
-					action = "remove"
-				} else {
-					s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas la permission pour retirer de l'XP.")
-					return
-				}
+				action = "remove"
 			} else if arg.Arg == "-s" {
-				if isMod {
-					action = "set"
-				} else {
-					s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas la permission pour définir l'XP.")
-					return
-				}
+				action = "set"
 			} else if arg.Arg == "-a" {
 				action = "add"
 			}
+		case "-g":
+			action = "give"
 		case "-m":
 			action = "me"
-		case "-g":
-			if targetUserID != "" {
-				action = "give"
-			} else {
-				s.ChannelMessageSend(m.ChannelID, "Veuillez spécifier un utilisateur à qui donner de l'XP.")
-			}
 		}
 	}
 
+	// Déterminer l'utilisateur cible (si aucun, utiliser l'utilisateur actuel)
+	if targetUserID == "" {
+		targetUserID = m.Author.ID
+	}
+
 	// Gérer les actions selon l'argument
+	userService := services.NewUserService() // Crée une instance du UserService
 	switch action {
 	case "remove":
-		handleRemoveXP(s, m, targetUserID, xpAmount)
+		if temporary {
+			handleTempXPChange(targetUserID, -xpAmount)
+			if verbose {
+				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("XP temporaire de %s réduite de %d.", targetUserID, xpAmount))
+			}
+		} else {
+			err = userService.AddExperience(targetUserID, -xpAmount)
+			if err != nil {
+				utils.SendErrorMessage(s, m.ChannelID, "Impossible de réduire l'XP")
+				return
+			}
+
+			if verbose {
+				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("XP de %s réduite de %d.", targetUserID, xpAmount))
+			}
+		}
 	case "set":
-		handleSetXP(s, m, targetUserID, xpAmount)
+		if temporary {
+			handleTempXPSet(targetUserID, xpAmount)
+			if verbose {
+				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("XP temporaire de %s définie à %d.", targetUserID, xpAmount))
+			}
+		} else {
+			err = userService.SetExperience(targetUserID, xpAmount)
+			if err != nil {
+				utils.SendErrorMessage(s, m.ChannelID, "Erreur lors de la définition de l'XP")
+				return
+			}
+			if verbose {
+				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("XP de %s définie à %d.", targetUserID, xpAmount))
+			}
+		}
 	case "add":
-		handleAddXP(s, m, targetUserID, xpAmount)
+		if temporary {
+			handleTempXPChange(targetUserID, xpAmount)
+			if verbose {
+				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("XP temporaire de %s augmentée de %d.", targetUserID, xpAmount))
+			}
+		} else {
+			err = userService.AddExperience(targetUserID, xpAmount)
+			if err != nil {
+				utils.SendErrorMessage(s, m.ChannelID, "Impossible d'ajouter de l'XP")
+				return
+			}
+			if verbose {
+				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s, vous avez gagné %d expérience.", targetUserID, xpAmount))
+			}
+		}
 	case "me":
-		handleGetXP(s, m, m.Author.ID) // Pour obtenir l'XP de l'utilisateur qui a exécuté la commande
+		amount, err := userService.GetExperience(m.Author.ID)
+		if err != nil {
+			utils.SendErrorMessage(s, m.ChannelID, "Utilisateur non trouvé ou erreur lors de la récupération de l'XP")
+			return
+		}
+		if verbose {
+			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s, votre expérience est de %d.", m.Author.Username, amount))
+		}
 	case "give":
-		handleGiveXP(s, m, m.Author.ID, targetUserID, xpAmount) // Giver ID is the command author
+		err := userService.GiveExperience(m.Author.ID, targetUserID, xpAmount) // Correction de GiveMoney à GiveExperience
+		if err != nil {
+			utils.SendErrorMessage(s, m.ChannelID, "Pas assez d'XP pour faire le don ou utilisateur introuvable")
+			return
+		}
+		if verbose {
+			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s a donné %d XP à %s.", m.Author.Username, xpAmount, targetUserID))
+		}
 	default:
-		s.ChannelMessageSend(m.ChannelID, "Aucune action spécifiée. Utilisez -r, -s, -a, -m, ou -h.")
+		if verbose {
+			s.ChannelMessageSend(m.ChannelID, "Aucune action spécifiée. Utilisez -r, -s, -a, -m, ou -h.")
+		}
 	}
 }
 
-// handleRemoveXP retire une quantité d'XP à l'utilisateur spécifié
-func handleRemoveXP(s *discordgo.Session, m *discordgo.MessageCreate, userID string, amount int) {
-	userService := services.NewUserService()
-	user, err := userService.GetUserByDiscordID(userID)
-	if err != nil {
-		utils.SendErrorMessage(s, m.ChannelID, "Utilisateur introuvable")
-		return
-	}
-
-	err = userService.AddExperience(user, -amount)
-	if err != nil {
-		utils.SendErrorMessage(s, m.ChannelID, "Impossible de réduire l'XP")
-		return
-	}
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("XP de %s réduite de %d.", user.Username, amount))
+// handleTempXPChange gère les changements temporaires d'XP
+func handleTempXPChange(userID string, changeAmount int) {
+	tempXPMap[userID] += changeAmount
+	go resetTemporaryXP(userID, 5*time.Minute) // Réinitialisation après 5 minutes (ou tout autre délai souhaité)
 }
 
-func handleSetXP(s *discordgo.Session, m *discordgo.MessageCreate, userID string, amount int) {
-	userService := services.NewUserService()
-	err := userService.SetExperience(userID, amount)
-	if err != nil {
-		utils.SendErrorMessage(s, m.ChannelID, "Erreur lors de la définition de l'XP")
-		return
-	}
-	user, _ := s.User(userID)
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("XP de %s définie à %d.", user.Username, amount))
+// handleTempXPSet gère la définition temporaire d'XP
+func handleTempXPSet(userID string, setAmount int) {
+	tempXPMap[userID] = setAmount
+	go resetTemporaryXP(userID, 5*time.Minute) // Réinitialisation après 5 minutes
 }
 
-func handleAddXP(s *discordgo.Session, m *discordgo.MessageCreate, userID string, amount int) {
-	userService := services.NewUserService()
-	user, err := userService.GetUserByDiscordID(userID)
-	if err != nil {
-		utils.SendErrorMessage(s, m.ChannelID, "Utilisateur introuvable")
-		return
-	}
-
-	err = userService.AddExperience(user, amount)
-	if err != nil {
-		utils.SendErrorMessage(s, m.ChannelID, "Impossible d'ajouter de l'XP")
-		return
-	}
-
-	discordUser, _ := s.User(userID)
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s, vous avez gagné %d expérience.", discordUser.Username, amount))
-}
-
-// handleGetXP affiche l'XP de l'utilisateur spécifié
-func handleGetXP(s *discordgo.Session, m *discordgo.MessageCreate, userID string) {
-	userService := services.NewUserService()
-	amount, err := userService.GetExperience(userID)
-	if err != nil {
-		utils.SendErrorMessage(s, m.ChannelID, "Utilisateur non trouvé ou erreur lors de la récupération de l'XP")
-		return
-	}
-	user, _ := s.User(userID)
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s, votre expérience est de %d.", user.Username, amount))
-}
-
-// handleGiveXP permet à un utilisateur de donner une quantité d'XP à un autre utilisateur
-func handleGiveXP(s *discordgo.Session, m *discordgo.MessageCreate, giverID, receiverID string, amount int) {
-	if amount <= 0 {
-		utils.SendErrorMessage(s, m.ChannelID, "La quantité d'XP donnée doit être supérieure à zéro")
-		return
-	}
-
-	userService := services.NewUserService()
-	err := userService.GiveMoney(giverID, receiverID, amount)
-	if err != nil {
-		utils.SendErrorMessage(s, m.ChannelID, "Pas assez d'XP pour faire le don ou utilisateur introuvable")
-		return
-	}
-
-	giver, _ := s.User(giverID)
-	receiver, _ := s.User(receiverID)
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s a donné %d XP à %s.", giver.Username, amount, receiver.Username))
+// resetTemporaryXP réinitialise les changements d'XP après une période donnée
+func resetTemporaryXP(userID string, duration time.Duration) {
+	time.Sleep(duration)
+	tempXPMap[userID] = 0
 }

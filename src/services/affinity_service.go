@@ -11,23 +11,21 @@ import (
 
 // AffinityService est un service pour gérer l'affinité des utilisateurs
 type AffinityService struct {
-	discordSession *discordgo.Session
-	userCtrl       *controllers.UserController
-	wordCtrl       *controllers.WordController
+	userCtrl *controllers.UserController
+	wordCtrl *controllers.WordController
 }
 
 // NewAffinityService crée une nouvelle instance de AffinityService
-func NewAffinityService(discordSession *discordgo.Session) *AffinityService {
+func NewAffinityService() *AffinityService {
 	return &AffinityService{
-		discordSession: discordSession,
-		userCtrl:       &controllers.UserController{DB: database.DB},
-		wordCtrl:       &controllers.WordController{DB: database.DB},
+		userCtrl: &controllers.UserController{DB: database.DB},
+		wordCtrl: &controllers.WordController{DB: database.DB},
 	}
 }
 
 // AdjustAffinity ajuste l'affinité d'un utilisateur en fonction du contenu de son message
-func (service *AffinityService) AdjustAffinity(m *discordgo.MessageCreate) {
-	if m.Author.ID == service.discordSession.State.User.ID {
+func (service *AffinityService) AdjustAffinity(userID string, m *discordgo.MessageCreate) {
+	if m.Author.ID == userID {
 		return
 	}
 
@@ -85,11 +83,17 @@ func (service *AffinityService) AdjustAffinity(m *discordgo.MessageCreate) {
 	}
 }
 
-// GetUserAffinity récupère l'affinité d'un utilisateur
-func (service *AffinityService) GetUserAffinity(userID string) (models.User, bool) {
-	user, err := service.userCtrl.GetUserByDiscordID(userID)
-	if err != nil {
-		return models.User{}, false
-	}
-	return *user, true
+// SetAffinity définit l'affinité d'un utilisateur
+func (service *AffinityService) SetAffinity(userID string, affinityAmount int) error {
+	return service.userCtrl.SetAffinity(userID, affinityAmount)
+}
+
+// AddAffinity ajoute de l'affinité à un utilisateur
+func (service *AffinityService) AddAffinity(userID string, affinityAmount int) error {
+	return service.userCtrl.AddAffinity(userID, affinityAmount)
+}
+
+// GetAffinity récupère l'affinité d'un utilisateur
+func (service *AffinityService) GetAffinity(userID string) (int, error) {
+	return service.userCtrl.GetAffinity(userID)
 }

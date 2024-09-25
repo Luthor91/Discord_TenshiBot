@@ -60,8 +60,8 @@ func RobCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	if rand.Intn(100) < 50 { // Taux de réussite de 50%
 		user, _ := services.NewUserService().GetUserByDiscordID(m.Author.ID)
-		services.NewUserService().AddMoney(target, -robAmount)
-		services.NewUserService().AddMoney(user, robAmount)
+		services.NewUserService().AddMoney(target.UserDiscordID, -robAmount)
+		services.NewUserService().AddMoney(user.UserDiscordID, robAmount)
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Succès ! Vous avez volé %d pièces à %s.", robAmount, targetUser.Username))
 	} else {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Échec ! Vous avez échoué à voler de l'argent à %s.", targetUser.Username))

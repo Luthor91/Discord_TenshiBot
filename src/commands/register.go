@@ -25,7 +25,7 @@ import (
 func RegisterHandlers(discord *discordgo.Session) {
 	// Créez les services nécessaires
 	userServices := services.NewUserService()
-	affinityService := services.NewAffinityService(discord)
+	affinityService := services.NewAffinityService()
 	logService := services.NewLogService()
 
 	// Créez le service de message avec les services requis

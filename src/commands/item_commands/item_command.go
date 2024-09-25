@@ -70,7 +70,7 @@ func ItemCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		// Appliquer les effets de l'item, ici timeout
-		err = services.NewUserService().UserApplyEffects(s, m.GuildID, targetUser)
+		err = services.NewUserService().UserApplyEffects(s, m.GuildID, targetUser.UserDiscordID)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Erreur lors de l'application des effets de l'item.")
 			return

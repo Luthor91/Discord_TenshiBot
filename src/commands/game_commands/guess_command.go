@@ -46,7 +46,7 @@ func GuessCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Récompense de 10 money
 		userService := services.NewUserService()
 		user, _ := userService.GetUserByDiscordID(m.Author.ID)
-		userService.AddMoney(user, 10)
+		userService.AddMoney(user.UserDiscordID, 10)
 	} else {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Dommage ! Le nombre était %d.", target))
 	}

@@ -2,21 +2,24 @@ package money_commands
 
 import (
 	"fmt"
+	"math/rand"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Luthor91/Tenshi/api/discord"
 	"github.com/Luthor91/Tenshi/config"
+	"github.com/Luthor91/Tenshi/services"
+	"github.com/Luthor91/Tenshi/utils"
 	"github.com/bwmarrin/discordgo"
 )
 
 // MoneyCommand gère les commandes liées à l'argent
 func MoneyCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// Vérifie que le message ne provient pas du bot lui-même
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
 
-	// Préfixe de commande pour l'argent
 	command := fmt.Sprintf("%smoney", config.AppConfig.BotPrefix)
 	if !strings.HasPrefix(m.Content, command) {
 		return
@@ -28,58 +31,134 @@ func MoneyCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Si aucun argument n'est fourni, afficher le solde de l'utilisateur
+	// Indicateur pour savoir si les réponses doivent être affichées
+	showResponses := false
+	if len(parsedArgs) > 0 && parsedArgs[0].Arg == "-v" {
+		showResponses = true
+		parsedArgs = parsedArgs[1:] // Supprime -v des arguments pour le traitement
+	}
+
 	if len(parsedArgs) == 0 {
-		handleShowUserBalance(s, m)
+		money, err := services.NewUserService().GetMoney(m.Author.ID)
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, "Erreur lors de la récupération du solde.")
+			return
+		}
+		utils.SendResponse(s, m.ChannelID, fmt.Sprintf("%s a %d unités de monnaie.", m.Author.Username, money), showResponses)
 		return
 	}
 
 	isMod, _ := discord.UserHasModeratorRole(s, m.GuildID, m.Author.ID)
-
-	// Gérer les commandes spéciales avec ou sans cible
 	var targetUser *discordgo.User
+
 	for _, arg := range parsedArgs {
 		switch arg.Arg {
 		case "-n":
-			targetUser = discord.HandleTarget(s, m, arg.Value) // Passez la valeur de l'argument
+			targetUser = discord.HandleTarget(s, m, arg.Value)
 			if targetUser == nil {
 				return
 			}
 		case "-r":
-			// Retirer de l'argent
 			if isMod || targetUser == m.Author {
-				// Vérifiez qu'il y a un montant spécifié après -r
-
 				if arg.Value != "" {
-					handleRemoveMoney(s, m, arg.Value) // Passer le montant
+					amount, err := strconv.Atoi(arg.Value)
+					if err != nil || amount <= 0 {
+						utils.SendResponse(s, m.ChannelID, "Veuillez entrer un montant valide pour retirer.", showResponses)
+						return
+					}
+
+					services.NewUserService().AddMoney(m.Author.ID, -amount) // Retirer de l'argent
+					utils.SendResponse(s, m.ChannelID, fmt.Sprintf("Vous avez retiré %d unités.", amount), showResponses)
 				} else {
-					s.ChannelMessageSend(m.ChannelID, "Veuillez spécifier un montant à retirer.")
+					utils.SendResponse(s, m.ChannelID, "Veuillez spécifier un montant à retirer.", showResponses)
 				}
 			} else {
-				s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas la permission pour effectuer cette commande.")
+				utils.SendResponse(s, m.ChannelID, "Vous n'avez pas la permission pour effectuer cette commande.", showResponses)
 			}
 		case "-d":
-			handleDailyReward(s, m)
+			canReceive, timeLeft, err := services.NewUserService().CanReceiveDailyReward(m.Author.ID)
+			if !canReceive || err != nil {
+				utils.SendResponse(s, m.ChannelID, fmt.Sprintf("Vous devez attendre encore %v avant de réclamer la prochaine récompense quotidienne.", timeLeft.Round(time.Minute)), showResponses)
+				return
+			}
+
+			randomAmount := rand.Intn(91) + 10
+			services.NewUserService().UpdateDailyMoney(m.Author.ID, randomAmount)
+			utils.SendResponse(s, m.ChannelID, fmt.Sprintf("Vous avez reçu %d unités aujourd'hui !", randomAmount), showResponses)
 		case "-m":
 			if isMod || targetUser == m.Author {
-				handleShowMoney(s, m, targetUser)
+				money, err := services.NewUserService().GetMoney(targetUser.ID)
+				if err != nil {
+					utils.SendResponse(s, m.ChannelID, "Erreur lors de la récupération du solde.", showResponses)
+					return
+				}
+				utils.SendResponse(s, m.ChannelID, fmt.Sprintf("%s a %d unités de monnaie.", targetUser.Username, money), showResponses)
 			} else {
-				s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas la permission pour voir le solde d'un autre utilisateur.")
+				utils.SendResponse(s, m.ChannelID, "Vous n'avez pas la permission pour voir le solde d'un autre utilisateur.", showResponses)
 			}
 		case "-g":
 			if targetUser != nil {
-				handleGiveMoney(s, m, arg.Value, targetUser)
+				amount, err := strconv.Atoi(arg.Value)
+				if err != nil || amount <= 0 {
+					utils.SendResponse(s, m.ChannelID, "Veuillez entrer un montant valide pour donner.", showResponses)
+					return
+				}
+
+				services.NewUserService().GiveMoney(m.Author.ID, targetUser.ID, amount)
+				utils.SendResponse(s, m.ChannelID, fmt.Sprintf("Vous avez donné %d unités à %s.", amount, targetUser.Username), showResponses)
 			} else {
-				s.ChannelMessageSend(m.ChannelID, "Veuillez spécifier un utilisateur à qui donner de l'argent.")
+				utils.SendResponse(s, m.ChannelID, "Veuillez spécifier un utilisateur à qui donner de l'argent.", showResponses)
 			}
 		case "-s":
 			if isMod {
-				handleSetMoney(s, m, arg.Value, targetUser)
+				amount, err := strconv.Atoi(arg.Value)
+				if err != nil || amount < 0 {
+					utils.SendResponse(s, m.ChannelID, "Veuillez entrer un montant valide pour définir l'argent.", showResponses)
+					return
+				}
+
+				services.NewUserService().SetMoney(targetUser.ID, amount)
+				utils.SendResponse(s, m.ChannelID, fmt.Sprintf("L'argent de %s a été défini à %d.", targetUser.Username, amount), showResponses)
 			} else {
-				s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas la permission pour effectuer cette commande.")
+				utils.SendResponse(s, m.ChannelID, "Vous n'avez pas la permission pour effectuer cette commande.", showResponses)
 			}
-		default:
+		case "-a":
+			if isMod {
+				amount, err := strconv.Atoi(arg.Value)
+				if err != nil || amount <= 0 {
+					utils.SendResponse(s, m.ChannelID, "Veuillez entrer un montant valide à ajouter.", showResponses)
+					return
+				}
+
+				if targetUser != nil {
+					services.NewUserService().AddMoney(targetUser.ID, amount)
+					utils.SendResponse(s, m.ChannelID, fmt.Sprintf("Vous avez ajouté %d unités à %s.", amount, targetUser.Username), showResponses)
+				} else {
+					services.NewUserService().AddMoney(m.Author.ID, amount)
+					utils.SendResponse(s, m.ChannelID, fmt.Sprintf("Vous avez ajouté %d unités à votre solde.", amount), showResponses)
+				}
+			} else {
+				utils.SendResponse(s, m.ChannelID, "Vous n'avez pas la permission pour effectuer cette commande.", showResponses)
+			}
+		case "-h":
 			displayHelpMessage(s, m.ChannelID)
+		default:
+			utils.SendResponse(s, m.ChannelID, "Commande inconnue. Utilisez -h pour voir l'aide.", showResponses)
 		}
 	}
+}
+
+// Fonction pour afficher un message d'aide
+func displayHelpMessage(s *discordgo.Session, channelID string) {
+	message := "Utilisation de la commande money:\n" +
+		"-n : Utiliser le nom d'utilisateur\n" +
+		"-r [montant] : Retirer de l'argent\n" +
+		"-d : Récompense quotidienne\n" +
+		"-m : Afficher votre solde\n" +
+		"-g [montant] : Donner de l'argent à un utilisateur\n" +
+		"-s [montant] : Définir l'argent d'un utilisateur (admin uniquement)\n" +
+		"-a [montant] : Ajouter de l'argent à un utilisateur (admin uniquement)\n" +
+		"-h : Afficher ce message d'aide\n" +
+		"-v : Activer l'affichage des réponses du bot pour les commandes"
+	s.ChannelMessageSend(channelID, message)
 }

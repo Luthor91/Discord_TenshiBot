@@ -64,3 +64,10 @@ func CheckErr(e error) {
 func SendErrorMessage(s *discordgo.Session, channelID, errMessage string) {
 	s.ChannelMessageSend(channelID, fmt.Sprintf("Erreur : %s", errMessage))
 }
+
+// Fonction pour envoyer une réponse conditionnellement
+func SendResponse(s *discordgo.Session, channelID string, message string, show bool) {
+	if show {
+		s.ChannelMessageSend(channelID, message)
+	}
+}

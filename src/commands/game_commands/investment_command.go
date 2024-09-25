@@ -76,7 +76,7 @@ func InvestCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Déduire l'argent de l'utilisateur
 	newMoneyAmount := user.Money - amount
-	err = userService.UpdateMoney(m.Author.ID, newMoneyAmount)
+	err = userService.AddMoney(m.Author.ID, newMoneyAmount)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Erreur lors de la mise à jour du solde : %v", err))
 		return

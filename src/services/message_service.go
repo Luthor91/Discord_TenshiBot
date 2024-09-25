@@ -61,12 +61,12 @@ func (service *MessageService) NewServerMessage(discord *discordgo.Session, mess
 		return
 	}
 
-	if err := service.userService.AddExperience(user, 1); err != nil {
+	if err := service.userService.AddExperience(user.UserDiscordID, 1); err != nil {
 		log.Printf("Erreur lors de l'ajout de l'expérience : %v", err)
 		return
 	}
 
-	service.affinityService.AdjustAffinity(message)
+	service.affinityService.AdjustAffinity(user.UserDiscordID, message)
 
 	// Vérifier si le bot est mentionné
 	if len(message.Mentions) > 0 {

@@ -245,8 +245,19 @@ func (ctrl *UserController) SetExperience(userID string, xpAmount int) error {
 	return ctrl.UpdateUser(user)
 }
 
-// UpdateMoney met à jour le montant d'argent d'un utilisateur
-func (ctrl *UserController) UpdateMoney(userID string, moneyAmount int) error {
+// AddAffinity met à jour le montant d'argent d'un utilisateur
+func (ctrl *UserController) AddAffinity(userID string, affinityAmount int) error {
+	user, err := ctrl.GetUserByDiscordID(userID)
+	if err != nil {
+		return err
+	}
+
+	user.Affinity += affinityAmount
+	return ctrl.UpdateUser(user)
+}
+
+// AddMoney met à jour le montant d'argent d'un utilisateur
+func (ctrl *UserController) AddMoney(userID string, moneyAmount int) error {
 	user, err := ctrl.GetUserByDiscordID(userID)
 	if err != nil {
 		return err
@@ -256,8 +267,8 @@ func (ctrl *UserController) UpdateMoney(userID string, moneyAmount int) error {
 	return ctrl.UpdateUser(user)
 }
 
-// UpdateExperience met à jour le montant d'expérience d'un utilisateur
-func (ctrl *UserController) UpdateExperience(userID string, xpAmount int) error {
+// AddExperience met à jour le montant d'expérience d'un utilisateur
+func (ctrl *UserController) AddExperience(userID string, xpAmount int) error {
 	user, err := ctrl.GetUserByDiscordID(userID)
 	if err != nil {
 		return err

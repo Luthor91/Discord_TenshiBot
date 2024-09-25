@@ -62,7 +62,7 @@ func ShifumiCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Récompense de 10 money
 		userService := services.NewUserService()
 		user, _ := userService.GetUserByDiscordID(m.Author.ID)
-		userService.AddMoney(user, 10)
+		userService.AddMoney(user.UserDiscordID, 10)
 	} else {
 		result = "Vous avez perdu !"
 	}

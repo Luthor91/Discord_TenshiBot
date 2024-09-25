@@ -113,20 +113,20 @@ func ShopCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			// Appliquer les effets de l'achat
 			switch selectedOption.Name {
 			case PetitPackXP:
-				userService.AddExperience(user, 50)
-				userService.AddMoney(user, -100)
+				userService.AddExperience(user.UserDiscordID, 50)
+				userService.AddMoney(user.UserDiscordID, -100)
 				_, _ = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous avez acheté un %s pour 100 money.", PetitPackXP))
 			case MoyenPackXP:
-				userService.AddExperience(user, 500)
-				userService.AddMoney(user, -1050)
+				userService.AddExperience(user.UserDiscordID, 500)
+				userService.AddMoney(user.UserDiscordID, -1050)
 				_, _ = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous avez acheté un %s pour 1000 money.", MoyenPackXP))
 			case GrandPackXP:
-				userService.AddExperience(user, 5000)
-				userService.AddMoney(user, -11000)
+				userService.AddExperience(user.UserDiscordID, 5000)
+				userService.AddMoney(user.UserDiscordID, -11000)
 				_, _ = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous avez acheté un %s pour 5000 money.", GrandPackXP))
 			case Timeout:
 				services.NewItemService().AddItem(UserDiscordID, "timeout", 1)
-				userService.AddMoney(user, -5000)
+				userService.AddMoney(user.UserDiscordID, -5000)
 				_, _ = s.ChannelMessageSend(m.ChannelID, "Vous avez acheté un timeout de 5 minutes pour 5000 money.")
 			}
 

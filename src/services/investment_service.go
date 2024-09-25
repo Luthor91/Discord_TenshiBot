@@ -47,7 +47,7 @@ func (s *InvestmentService) CreateInvestment(discordID string, amount int) error
 
 	// Déduire l'argent de l'utilisateur
 	newMoneyAmount := user.Money - amount
-	err = NewUserService().UpdateMoney(user.UserDiscordID, newMoneyAmount)
+	err = NewUserService().AddMoney(user.UserDiscordID, newMoneyAmount)
 	if err != nil {
 		return fmt.Errorf("erreur lors de la mise à jour du solde : %w", err)
 	}
@@ -79,7 +79,7 @@ func (s *InvestmentService) CollectInvestment(discordID string) (int, float64, e
 
 	// Mettre à jour le solde de l'utilisateur
 	newMoneyAmount := user.Money + returnAmount
-	err = NewUserService().UpdateMoney(user.UserDiscordID, newMoneyAmount)
+	err = NewUserService().AddMoney(user.UserDiscordID, newMoneyAmount)
 	if err != nil {
 		return 0, 0, fmt.Errorf("erreur lors de la mise à jour du solde : %w", err)
 	}

@@ -57,7 +57,7 @@ func BuyCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Appliquer l'achat
-	err = services.NewUserService().UpdateMoney(userID, -totalCost)
+	err = services.NewUserService().AddMoney(userID, -totalCost)
 	if err != nil {
 		_, _ = s.ChannelMessageSend(m.ChannelID, "Erreur lors de la mise à jour de votre argent.")
 		log.Println("Erreur lors de la mise à jour de l'argent:", err)
