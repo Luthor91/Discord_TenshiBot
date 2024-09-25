@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/Luthor91/Tenshi/controllers"
@@ -25,16 +24,7 @@ func displayHelpMessage(s *discordgo.Session, channelID string) {
 }
 
 // Gérer le ciblage d'un utilisateur par son nom
-func handleTarget(s *discordgo.Session, m *discordgo.MessageCreate) *discordgo.User {
-	args := strings.Fields(m.Content)
-
-	if len(args) < 3 || args[1] != "-n" {
-		s.ChannelMessageSend(m.ChannelID, "Veuillez utiliser la commande avec -n suivi du nom d'utilisateur.")
-		return nil
-	}
-
-	target := args[2]
-
+func handleTarget(s *discordgo.Session, m *discordgo.MessageCreate, target string) *discordgo.User {
 	// Vérification des utilisateurs dans les mentions
 	for _, mention := range m.Mentions {
 		if mention.Username == target || fmt.Sprintf("%s#%s", mention.Username, mention.Discriminator) == target {
@@ -59,12 +49,8 @@ func handleTarget(s *discordgo.Session, m *discordgo.MessageCreate) *discordgo.U
 }
 
 // Retirer de l'argent à un utilisateur
-func handleRemoveMoney(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
-	if len(args) < 3 {
-		s.ChannelMessageSend(m.ChannelID, "Veuillez entrer un montant valide pour retirer.")
-		return
-	}
-	amount, err := strconv.Atoi(args[2])
+func handleRemoveMoney(s *discordgo.Session, m *discordgo.MessageCreate, amountStr string) {
+	amount, err := strconv.Atoi(amountStr)
 	if err != nil || amount <= 0 {
 		s.ChannelMessageSend(m.ChannelID, "Veuillez entrer un montant valide pour retirer.")
 		return
@@ -75,6 +61,7 @@ func handleRemoveMoney(s *discordgo.Session, m *discordgo.MessageCreate, args []
 		s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas assez d'argent pour retirer ce montant.")
 		return
 	}
+
 	newMoney := userMoney - amount
 	services.NewUserService().SetMoney(m.Author.ID, newMoney)
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous avez retiré %d unités. Nouveau solde : %d", amount, newMoney))
@@ -110,13 +97,8 @@ func handleShowMoney(s *discordgo.Session, m *discordgo.MessageCreate, targetUse
 }
 
 // Donner de l'argent à un utilisateur
-func handleGiveMoney(s *discordgo.Session, m *discordgo.MessageCreate, args []string, targetUser *discordgo.User) {
-	if len(args) < 3 {
-		s.ChannelMessageSend(m.ChannelID, "Veuillez entrer un montant valide pour donner.")
-		return
-	}
-
-	amount, err := strconv.Atoi(args[2])
+func handleGiveMoney(s *discordgo.Session, m *discordgo.MessageCreate, amountStr string, targetUser *discordgo.User) {
+	amount, err := strconv.Atoi(amountStr)
 	if err != nil || amount <= 0 {
 		s.ChannelMessageSend(m.ChannelID, "Veuillez entrer un montant valide pour donner.")
 		return
@@ -127,13 +109,8 @@ func handleGiveMoney(s *discordgo.Session, m *discordgo.MessageCreate, args []st
 }
 
 // Définir l'argent d'un utilisateur (admin seulement)
-func handleSetMoney(s *discordgo.Session, m *discordgo.MessageCreate, args []string, targetUser *discordgo.User) {
-	if len(args) < 3 {
-		s.ChannelMessageSend(m.ChannelID, "Veuillez entrer un montant valide pour définir l'argent.")
-		return
-	}
-
-	amount, err := strconv.Atoi(args[2])
+func handleSetMoney(s *discordgo.Session, m *discordgo.MessageCreate, amountStr string, targetUser *discordgo.User) {
+	amount, err := strconv.Atoi(amountStr)
 	if err != nil || amount < 0 {
 		s.ChannelMessageSend(m.ChannelID, "Veuillez entrer un montant valide pour définir l'argent.")
 		return
@@ -146,6 +123,10 @@ func handleSetMoney(s *discordgo.Session, m *discordgo.MessageCreate, args []str
 // handleShowUserBalance affiche le solde de l'utilisateur
 func handleShowUserBalance(s *discordgo.Session, m *discordgo.MessageCreate) {
 	userID := m.Author.ID
-	balance, _ := services.NewUserService().GetMoney(userID)
+	balance, err := services.NewUserService().GetMoney(userID)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "Erreur lors de la récupération du solde.")
+		return
+	}
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s, votre solde est de %d.", m.Author.Username, balance))
 }

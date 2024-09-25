@@ -7,16 +7,16 @@ import (
 
 	"github.com/Luthor91/Tenshi/api/discord"
 	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/utils"
+	"github.com/Luthor91/Tenshi/services"
 	"github.com/bwmarrin/discordgo"
 )
 
+// ModerateUserCommand gère les commandes de modération des utilisateurs
 func ModerateUserCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
 
-	// Vérifier si l'utilisateur est modérateur
 	// Vérifier si l'utilisateur est modérateur
 	isMod, err := discord.UserHasModeratorRole(s, m.GuildID, m.Author.ID)
 	if err != nil || !isMod {
@@ -24,18 +24,16 @@ func ModerateUserCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Vérifier si la commande
+	// Vérifier si la commande commence par le bon préfixe
 	command := fmt.Sprintf("%suser", config.AppConfig.BotPrefix)
 	commandAlias := fmt.Sprintf("%susr", config.AppConfig.BotPrefix)
 
 	if !strings.HasPrefix(m.Content, command) && !strings.HasPrefix(m.Content, commandAlias) {
 		return
 	}
-	// Parsing command
-	args := strings.Fields(m.Content)
 
-	// Parse command arguments
-	parsedArgs, err := parseArgs(args)
+	// Extraction des arguments
+	parsedArgs, err := discord.ExtractArguments(m.Content, command)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, err.Error())
 		return
@@ -58,57 +56,59 @@ func ModerateUserCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Récupérer les valeurs de parsedArgs
-	userID := parsedArgs["-n"]
-	action := ""
-	reason := ""
-	actionTime := time.Duration(0)
-	targetChannel := ""
+	// Récupérer les valeurs des parsedArgs
+	var userID string
+	var action string
+	var reason string
+	var actionTime time.Duration
+	var targetChannel string
 
-	// Gérer les différentes actions (ban, warn, kick, etc.)
-	if val, exists := parsedArgs["-b"]; exists {
-		action = "ban"
-		reason = val
-	}
-	if val, exists := parsedArgs["-w"]; exists {
-		action = "warn"
-		reason = val
-	}
-	if val, exists := parsedArgs["-k"]; exists {
-		action = "kick"
-		reason = val
-	}
-	if val, exists := parsedArgs["-m"]; exists {
-		action = "mute"
-		reason = val
-	}
-	if val, exists := parsedArgs["-d"]; exists {
-		action = "deafen"
-		reason = val
-	}
-	if val, exists := parsedArgs["-to"]; exists {
-		action = "timeout"
-		reason = val
-	}
-	if val, exists := parsedArgs["-mv"]; exists {
-		action = "move"
-		targetChannel = val
-	}
-	if val, exists := parsedArgs["-t"]; exists {
-		duration, err := utils.ParseDuration(val)
-		if err != nil {
-			s.ChannelMessageSend(m.ChannelID, "Durée incorrecte, veuillez vérifier.")
-			return
+	for _, arg := range parsedArgs {
+		switch arg.Arg {
+		case "-n":
+			userID = discord.HandleTarget(s, m, arg.Value).ID
+		case "-b":
+			action = "ban"
+			reason = arg.Value
+		case "-w":
+			action = "warn"
+			reason = arg.Value
+		case "-k":
+			action = "kick"
+			reason = arg.Value
+		case "-m":
+			action = "mute"
+			reason = arg.Value
+		case "-d":
+			action = "deafen"
+			reason = arg.Value
+		case "-to":
+			action = "timeout"
+			reason = arg.Value
+		case "-mv":
+			action = "move"
+			targetChannel = arg.Value
+		case "-t":
+			actionTime = arg.Duration
+		case "-r":
+			if userID != "" {
+				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("(En cours) Statut de l'utilisateur %s réinitialisé.", userID))
+				return
+			}
+		case "-rw":
+			if userID != "" {
+				warnService := services.NewWarnService(s, m.GuildID)
+				err := warnService.ResetWarns(userID)
+				if err != nil {
+					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Erreur lors de la réinitialisation des avertissements de l'utilisateur %s: %v", userID, err))
+					return
+				}
+				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Avertissements de l'utilisateur %s réinitialisés.", userID))
+				return
+			}
+		default:
+			// Ignorer les arguments non reconnus
 		}
-		actionTime = duration
-	}
-	if _, exists := parsedArgs["-r"]; exists {
-		resetAllUserStatus(s, m, userID)
-		return
-	}
-	if _, exists := parsedArgs["-rw"]; exists {
-		resetUserWarnings(s, m, userID)
-		return
 	}
 
 	// Effectuer l'action spécifiée
@@ -116,7 +116,13 @@ func ModerateUserCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	case "ban":
 		discord.BanUser(s, m, userID, reason)
 	case "warn":
-		warnUser(s, m, userID, reason)
+		warnService := services.NewWarnService(s, m.GuildID)
+		err := warnService.AddWarn(userID, reason, m.Author.ID)
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Erreur lors de l'envoi de l'avertissement à l'utilisateur %s : %v", userID, err))
+			return
+		}
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Avertissement envoyé à l'utilisateur %s : %s", userID, reason))
 	case "kick":
 		discord.KickUser(s, m, userID, reason)
 	case "mute":

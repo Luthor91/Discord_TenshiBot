@@ -1,4 +1,4 @@
-package stat_commands
+package discord
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// UserStatsCommand affiche des statistiques sur un utilisateur
-func userStatsCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
+// PrintUserStats affiche des statistiques sur un utilisateur
+func PrintUserStats(s *discordgo.Session, m *discordgo.MessageCreate) {
 	member, err := s.GuildMember(m.GuildID, m.Author.ID)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Erreur lors de la récupération des statistiques de l'utilisateur.")
@@ -20,8 +20,8 @@ func userStatsCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	s.ChannelMessageSend(m.ChannelID, response)
 }
 
-// ServerStatsCommand affiche des statistiques sur le serveur
-func serverStatsCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
+// PrintServerStats affiche des statistiques sur le serveur
+func PrintServerStats(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guild, err := s.Guild(m.GuildID)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Erreur lors de la récupération des statistiques du serveur.")
@@ -33,8 +33,8 @@ func serverStatsCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	s.ChannelMessageSend(m.ChannelID, response)
 }
 
-// BotStatsCommand affiche des statistiques sur le bot
-func botStatsCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
+// PrintBotStats affiche des statistiques sur le bot
+func PrintBotStats(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Compter le nombre total de membres sur tous les serveurs
 	totalUsers := 0
 	for _, guild := range s.State.Guilds {
@@ -49,9 +49,21 @@ func botStatsCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	s.ChannelMessageSend(m.ChannelID, response)
 }
 
-// botPerfsCommand affiche les performances du bot sur Discord
-func botPerfsCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
+// PrintChannelStats affiche des statistiques sur le canal
+func PrintChannelStats(s *discordgo.Session, m *discordgo.MessageCreate) {
+	channel, err := s.Channel(m.ChannelID)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "Erreur lors de la récupération des statistiques du canal.")
+		return
+	}
 
+	response := fmt.Sprintf("**Statistiques du canal :**\n- Nom: %s\n- ID: %s\n- Type: %d\n- Position: %d",
+		channel.Name, channel.ID, channel.Type, channel.Position)
+	s.ChannelMessageSend(m.ChannelID, response)
+}
+
+// BotPerfsCommand affiche les performances du bot sur Discord
+func PrintBotPerfs(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Récupérer les statistiques de la mémoire
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)

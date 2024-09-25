@@ -6,7 +6,6 @@ import (
 
 	"github.com/Luthor91/Tenshi/api/discord"
 	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/controllers"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -29,77 +28,100 @@ func WordCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Récupérer les arguments de la commande
-	args := strings.Fields(strings.TrimPrefix(m.Content, command))
-	if len(args) < 2 {
-		s.ChannelMessageSend(m.ChannelID, "Usage : `?word [-g|-b|-d|-a|-l] [word]`")
+	// Récupérer et analyser les arguments de la commande
+	parsedArgs, err := discord.ExtractArguments(m.Content, command)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, err.Error())
 		return
 	}
 
-	action := args[0]
-	word := strings.Join(args[1:], " ")
-
-	wordController := controllers.NewWordController()
-
-	switch action {
-	case "-g": // Ajouter un "goodword"
-		if err := wordController.AddGoodWord(word); err != nil {
-			s.ChannelMessageSend(m.ChannelID, "Erreur lors de l'ajout du bon mot : "+err.Error())
-			return
-		}
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Le mot \"%s\" a été ajouté aux goodwords.", word))
-
-	case "-b": // Ajouter un "badword"
-		if err := wordController.AddBadWord(word); err != nil {
-			s.ChannelMessageSend(m.ChannelID, "Erreur lors de l'ajout du mauvais mot : "+err.Error())
-			return
-		}
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Le mot \"%s\" a été ajouté aux badwords.", word))
-
-	case "-d": // Supprimer un mot
-		if strings.HasPrefix(word, "good") {
-			if err := wordController.DeleteGoodWord(word); err != nil {
-				s.ChannelMessageSend(m.ChannelID, "Erreur lors de la suppression du goodword : "+err.Error())
-				return
-			}
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Le mot \"%s\" a été supprimé des goodwords.", word))
-		} else if strings.HasPrefix(word, "bad") {
-			if err := wordController.DeleteBadWord(word); err != nil {
-				s.ChannelMessageSend(m.ChannelID, "Erreur lors de la suppression du badword : "+err.Error())
-				return
-			}
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Le mot \"%s\" a été supprimé des badwords.", word))
-		} else {
-			s.ChannelMessageSend(m.ChannelID, "Veuillez spécifier si le mot est un goodword ou un badword.")
-		}
-
-	case "-a": // Ajouter un mot (par défaut goodword)
-		if err := wordController.AddGoodWord(word); err != nil {
-			s.ChannelMessageSend(m.ChannelID, "Erreur lors de l'ajout du mot : "+err.Error())
-			return
-		}
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Le mot \"%s\" a été ajouté avec succès.", word))
-
-	case "-l": // Lister les mots
-		if word == "good" {
-			goodWords, err := wordController.GetGoodWords()
-			if err != nil || len(goodWords) == 0 {
-				s.ChannelMessageSend(m.ChannelID, "Aucun goodword trouvé.")
-				return
-			}
-			s.ChannelMessageSend(m.ChannelID, "Liste des goodwords :\n"+strings.Join(goodWords, "\n"))
-		} else if word == "bad" {
-			badWords, err := wordController.GetBadWords()
-			if err != nil || len(badWords) == 0 {
-				s.ChannelMessageSend(m.ChannelID, "Aucun badword trouvé.")
-				return
-			}
-			s.ChannelMessageSend(m.ChannelID, "Liste des badwords :\n"+strings.Join(badWords, "\n"))
-		} else {
-			s.ChannelMessageSend(m.ChannelID, "Spécifiez 'good' ou 'bad' pour lister les mots correspondants.")
-		}
-
-	default:
-		s.ChannelMessageSend(m.ChannelID, "Argument invalide. Usage : `?word [-g|-b|-d|-a|-l] [word]`")
+	// Vérifier qu'il y a des arguments
+	if len(parsedArgs) == 0 {
+		s.ChannelMessageSend(m.ChannelID, "Usage : `?word [-g|-b|-d|-a|-l|-v|-h|-? <value>]`")
+		return
 	}
+
+	// Variables pour stocker l'état des options
+	var goodWord bool
+	var badWord bool
+	var addWord bool
+	var deleteWord bool
+	var listWords bool
+	var verbose bool
+	var specifiedWord string
+
+	// Analyser les arguments
+	for _, arg := range parsedArgs {
+		switch arg.Arg {
+		case "-g":
+			goodWord = true
+		case "-b":
+			badWord = true
+		case "-a":
+			addWord = true
+		case "-d":
+			deleteWord = true
+		case "-l":
+			listWords = true
+		case "-v":
+			verbose = true
+		case "-h":
+			s.ChannelMessageSend(m.ChannelID, "Usage : `?word [-g|-b|-d|-a|-l|-v|-h|-? <value>]`")
+			return
+		case "-?":
+			if len(arg.Value) > 0 {
+				specifiedWord = arg.Value
+			}
+		default:
+			s.ChannelMessageSend(m.ChannelID, "Argument non reconnu. Usage : `?word [-g|-b|-d|-a|-l|-v|-h|-? <value>]`")
+			return
+		}
+	}
+
+	// Logique de commande
+	if addWord && deleteWord {
+		s.ChannelMessageSend(m.ChannelID, "Vous ne pouvez pas ajouter et supprimer un mot en même temps.")
+		return
+	}
+
+	if addWord {
+		if specifiedWord == "" {
+			s.ChannelMessageSend(m.ChannelID, "Veuillez spécifier un mot à ajouter avec `-? <value>`.")
+			return
+		}
+		if goodWord {
+			handleGoodWord(s, m, specifiedWord) // Appelle la fonction helper pour gérer les goodwords
+		} else if badWord {
+			handleBadWord(s, m, specifiedWord) // Appelle la fonction helper pour gérer les badwords
+		} else {
+			s.ChannelMessageSend(m.ChannelID, "Veuillez spécifier si le mot est un bon mot (-g) ou un mauvais mot (-b).")
+		}
+		return
+	}
+
+	if deleteWord {
+		if specifiedWord == "" {
+			s.ChannelMessageSend(m.ChannelID, "Veuillez spécifier un mot à supprimer avec `-? <value>`.")
+			return
+		}
+		handleDeleteWord(s, m, specifiedWord) // Appelle la fonction helper pour supprimer un mot
+		return
+	}
+
+	if listWords {
+		if goodWord {
+			handleListGoodWords(s, m) // Appelle la fonction pour lister les goodwords
+		}
+		if badWord {
+			handleListBadWords(s, m) // Appelle la fonction pour lister les badwords
+		}
+		return
+	}
+
+	if verbose {
+		// Ajoutez ici la logique pour le mode verbose si nécessaire
+		return
+	}
+
+	s.ChannelMessageSend(m.ChannelID, "Aucune commande reconnue. Usage : `?word [-g|-b|-d|-a|-l|-v|-h|-? <value>]`")
 }

@@ -10,8 +10,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+// ModerateMessageCommand gère les commandes de modération des messages
 func ModerateMessageCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// Ne pas réagir à ses propres messages
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
@@ -30,54 +30,31 @@ func ModerateMessageCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Parsing command
-	args := strings.Fields(m.Content)
+	// Extraction des arguments
+	parsedArgs, err := discord.ExtractArguments(m.Content, command)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, err.Error())
+		return
+	}
 
-	var userID string
-	var channelID string = m.ChannelID // Par défaut, on prend le salon actuel
+	var userID, channelID string = m.ChannelID, m.ChannelID
 	var deleteCount int
-	var parseErr error
-	var verbose bool // Indicateur pour afficher le message de confirmation
+	var verbose bool
 
-	// Parse command arguments
-	for i := 0; i < len(args); i++ {
-		arg := args[i]
-		switch arg {
-		case "-n": // Option pour spécifier un utilisateur
-			if i+1 < len(args) {
-				target := args[i+1] // Le mot suivant "-n"
-				// Vérifie si c'est une mention
-				if strings.HasPrefix(target, "<@!") && strings.HasSuffix(target, ">") {
-					userID = target[3 : len(target)-1] // Extrait l'ID de l'utilisateur mentionné
-				} else {
-					// Recherche l'utilisateur par nom d'utilisateur
-					members, err := s.GuildMembers(m.GuildID, "", 100) // Récupère les membres du serveur
-					if err == nil {
-						for _, member := range members {
-							if member.User.Username == target || fmt.Sprintf("%s#%s", member.User.Username, member.User.Discriminator) == target {
-								userID = member.User.ID // Stocke l'ID de l'utilisateur trouvé
-								break
-							}
-						}
-					}
-				}
-				i++ // Passe à l'argument suivant
+	// Analyse des arguments extraits
+	for _, arg := range parsedArgs {
+		switch arg.Arg {
+		case "-n":
+			userID = discord.HandleTarget(s, m, arg.Value).ID
+		case "-c":
+			channelID = arg.Value
+		case "-d":
+			deleteCount, err = strconv.Atoi(arg.Value)
+			if err != nil || deleteCount <= 0 {
+				s.ChannelMessageSend(m.ChannelID, "Veuillez spécifier un nombre valide de messages à supprimer.")
+				return
 			}
-		case "-c": // Option pour spécifier un salon
-			if i+1 < len(args) {
-				channelID = args[i+1]
-				i++
-			}
-		case "-d": // Option pour spécifier le nombre de messages à supprimer
-			if i+1 < len(args) {
-				deleteCount, parseErr = strconv.Atoi(args[i+1])
-				if parseErr != nil || deleteCount <= 0 {
-					s.ChannelMessageSend(m.ChannelID, "Veuillez spécifier un nombre valide de messages à supprimer.")
-					return
-				}
-				i++
-			}
-		case "-v": // Option pour afficher un message de confirmation
+		case "-v":
 			verbose = true
 		default:
 			// Ignorer les arguments non reconnus
@@ -90,7 +67,7 @@ func ModerateMessageCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Résoudre l'ID du salon si seul le nom est fourni
+	// Résoudre l'ID du salon si seulement le nom est fourni
 	if channelID != "" && !strings.HasPrefix(channelID, "<#") {
 		channels, err := s.GuildChannels(m.GuildID)
 		if err != nil {
@@ -114,7 +91,6 @@ func ModerateMessageCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Supprimer les messages selon l'utilisateur ou le canal spécifié
 	for _, message := range messages {
-		// Si userID est vide, supprimer tous les messages sinon filtrer par l'utilisateur spécifié
 		if userID == "" || message.Author.ID == userID {
 			err := s.ChannelMessageDelete(channelID, message.ID)
 			if err != nil {
@@ -125,7 +101,6 @@ func ModerateMessageCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Afficher le message de confirmation si l'option "-v" est présente
 	if verbose {
-		// Récupérer les informations du canal
 		channel, err := s.Channel(channelID)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Messages supprimés, mais erreur lors de la récupération des informations du salon.")

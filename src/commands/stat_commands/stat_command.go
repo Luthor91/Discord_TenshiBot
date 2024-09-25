@@ -6,6 +6,7 @@ import (
 
 	// Assurez-vous de pointer vers votre fichier de configuration
 
+	"github.com/Luthor91/Tenshi/api/discord"
 	"github.com/Luthor91/Tenshi/config"
 	"github.com/bwmarrin/discordgo"
 )
@@ -17,31 +18,44 @@ func StatCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Vérifie que le message commence par le préfixe de commande
+	// Vérifie que l'utilisateur est modérateur
+	isMod, err := discord.UserHasModeratorRole(s, m.GuildID, m.Author.ID)
+	if err != nil || !isMod {
+		s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas les permissions nécessaires.")
+		return
+	}
+
+	// Définir le préfixe de commande
 	command := fmt.Sprintf("%sstat", config.AppConfig.BotPrefix)
 	if !strings.HasPrefix(m.Content, command) {
 		return
 	}
 
-	// Parsing des arguments
-	args := strings.Fields(m.Content)
-	if len(args) < 2 {
-		s.ChannelMessageSend(m.ChannelID, "Veuillez spécifier une option: -u (utilisateur), -s (serveur), ou -b (bot).")
+	// Récupérer et analyser les arguments de la commande
+	parsedArgs, err := discord.ExtractArguments(m.Content, command)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, err.Error())
+		return
+	}
+
+	// Vérifier qu'il y a des arguments
+	if len(parsedArgs) < 1 {
+		s.ChannelMessageSend(m.ChannelID, "Veuillez spécifier une option : `-u` (utilisateur), `-s` (serveur), `-b` (bot), ou `-c` (canal).")
 		return
 	}
 
 	// Gère les différentes options
-	option := args[1]
+	option := parsedArgs[0].Arg
 	switch option {
 	case "-u":
-		userStatsCommand(s, m)
+		discord.PrintUserStats(s, m)
 	case "-s":
-		serverStatsCommand(s, m)
+		discord.PrintServerStats(s, m)
 	case "-b":
-		botStatsCommand(s, m)
-	case "-p":
-		botPerfsCommand(s, m)
+		discord.PrintBotStats(s, m)
+	case "-c":
+		discord.PrintChannelStats(s, m)
 	default:
-		s.ChannelMessageSend(m.ChannelID, "Option inconnue. Utilisez -u (utilisateur), -s (serveur), ou -b (bot).")
+		s.ChannelMessageSend(m.ChannelID, "Option inconnue. Utilisez `-u` (utilisateur), `-s` (serveur), `-b` (bot), ou `-c` (canal).")
 	}
 }

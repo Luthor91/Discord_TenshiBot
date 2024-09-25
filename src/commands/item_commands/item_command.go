@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Luthor91/Tenshi/api/discord"
 	"github.com/Luthor91/Tenshi/config"
 	"github.com/Luthor91/Tenshi/services"
 	"github.com/bwmarrin/discordgo"
@@ -22,33 +23,33 @@ func ItemCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Extraire les arguments de la commande
-	args := strings.Fields(m.Content[len(command):])
-	if len(args) < 2 {
+	parsedArgs, err := discord.ExtractArguments(m.Content, command)
+	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Usage: ?item [-u|-r|-m|-g] [-n <mention>] <item_name> <quantity>")
 		return
 	}
 
-	action := args[0]
+	var action string
 	var itemName string
 	var quantity int
 	var targetID string
-	var err error
 
-	// Analyser l'option -n pour la mention
-	for i, arg := range args {
-		if arg == "-n" && i+1 < len(args) {
-			targetMention := args[i+1]
-			targetID = strings.TrimPrefix(targetMention, "<@!")
-			targetID = strings.TrimSuffix(targetID, ">")
-		} else if arg == "-u" || arg == "-r" || arg == "-g" {
-			action = arg
-		} else if i == len(args)-2 {
-			itemName = arg
-		} else if i == len(args)-1 {
-			quantity, err = strconv.Atoi(arg)
-			if err != nil {
-				s.ChannelMessageSend(m.ChannelID, "Quantité invalide.")
-				return
+	// Analyser les arguments extraits
+	for _, arg := range parsedArgs {
+		switch arg.Arg {
+		case "-u", "-r", "-m", "-g":
+			action = arg.Arg
+		case "-n":
+			targetID = arg.Value
+		default:
+			if itemName == "" {
+				itemName = arg.Value
+			} else {
+				quantity, err = strconv.Atoi(arg.Value)
+				if err != nil {
+					s.ChannelMessageSend(m.ChannelID, "Quantité invalide.")
+					return
+				}
 			}
 		}
 	}
@@ -76,6 +77,7 @@ func ItemCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Vous avez utilisé %d %s sur <@%s>.", quantity, itemName, targetID))
+
 		// Action : Jeter un item
 	} else if action == "-r" {
 		err = services.NewItemService().RemoveItem(m.Author.ID, itemName, quantity)
