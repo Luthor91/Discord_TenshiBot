@@ -129,8 +129,8 @@ func (service *ShopService) GetShopCooldown(userDiscordID string, itemID uint) (
 }
 
 // GetUserShopCooldown récupère le cooldown d'achat pour un utilisateur donné et un item spécifique.
-func (s *ShopService) GetUserShopCooldown(userID string, itemID uint) (*models.UserShopCooldown, error) {
-	cooldown, err := controllers.NewShopController().GetUserShopCooldown(userID, itemID)
+func (s *ShopService) GetUserShopCooldown(userDiscordID string, itemID uint) (*models.UserShopCooldown, error) {
+	cooldown, err := controllers.NewShopController().GetUserShopCooldown(userDiscordID, itemID)
 	if err != nil {
 		log.Println("Erreur dans le service GetUserShopCooldown:", err)
 		return nil, err
@@ -139,11 +139,21 @@ func (s *ShopService) GetUserShopCooldown(userID string, itemID uint) (*models.U
 }
 
 // SetUserShopCooldown met à jour le cooldown d'achat pour un utilisateur donné et un item spécifique.
-func (s *ShopService) SetUserShopCooldown(userID string, itemID uint, nextPurchaseTime time.Time) error {
-	err := controllers.NewShopController().SetUserShopCooldown(userID, itemID, nextPurchaseTime)
+func (s *ShopService) SetUserShopCooldown(userDiscordID string, itemID uint, nextPurchaseTime time.Time) error {
+	err := controllers.NewShopController().SetUserShopCooldown(userDiscordID, itemID, nextPurchaseTime)
 	if err != nil {
 		log.Println("Erreur dans le service SetUserShopCooldown:", err)
 		return err
 	}
 	return nil
+}
+
+// IsUserShopCooldownExists vérifie si un cooldown d'achat existe pour un utilisateur et un article spécifiques
+func (service *ShopService) IsUserShopCooldownExists(userDiscordID string, itemID uint) (bool, error) {
+	exists, err := controllers.NewShopController().IsUserShopCooldownExists(userDiscordID, itemID)
+	if err != nil {
+		log.Println("Erreur dans le service SetUserShopCooldown:", err)
+		return false, nil
+	}
+	return exists, nil
 }

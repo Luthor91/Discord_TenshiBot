@@ -3,8 +3,10 @@ package controllers
 import (
 	"time"
 
+	"github.com/Luthor91/Tenshi/api/discord"
 	"github.com/Luthor91/Tenshi/database"
 	"github.com/Luthor91/Tenshi/models"
+	"github.com/bwmarrin/discordgo"
 	"gorm.io/gorm"
 )
 
@@ -89,9 +91,55 @@ func (ctrl *LogController) GetLogsByUser(userID string, limit int) ([]models.Log
 	return logs, nil
 }
 
+// GetLogsByUserAndChannel récupère les logs associés à un utilisateur dans un canal spécifique
+func (ctrl *LogController) GetLogsByUserAndChannel(userID, channelID string, limit int) ([]models.Log, error) {
+	var logs []models.Log
+	if err := ctrl.DB.Where("user_discord_id = ? AND channel_id = ?", userID, channelID).
+		Order("timestamp desc").Limit(limit).Find(&logs).Error; err != nil {
+		return nil, err
+	}
+	return logs, nil
+}
+
+// GetLogsByChannel récupère les logs d'un canal spécifique
+func (ctrl *LogController) GetLogsByChannel(channelID string, limit int) ([]models.Log, error) {
+	var logs []models.Log
+	if err := ctrl.DB.Where("channel_id = ?", channelID).
+		Order("timestamp desc").Limit(limit).Find(&logs).Error; err != nil {
+		return nil, err
+	}
+	return logs, nil
+}
+
 // DeleteLog supprime une entrée de journal par ID
 func (ctrl *LogController) DeleteLog(id uint) error {
 	return ctrl.DB.Delete(&models.Log{}, id).Error
+}
+
+// InsertLog insère un log dans la base de données
+func (c *LogController) InsertLog(s *discordgo.Session, msg *discordgo.Message) error {
+	serverName, err := discord.GetServerName(s, msg.GuildID)
+	if err != nil {
+		return err // Retourne l'erreur si la récupération échoue
+	}
+
+	channelName, err := discord.GetChannelName(s, msg.ChannelID)
+	if err != nil {
+		return err // Retourne l'erreur si la récupération échoue
+	}
+
+	logEntry := models.Log{
+		Timestamp:     time.Now(),
+		ServerID:      msg.GuildID,
+		ServerName:    serverName,
+		ChannelID:     msg.ChannelID,
+		ChannelName:   channelName,
+		UserDiscordID: msg.Author.ID,
+		Username:      msg.Author.Username,
+		Message:       msg.Content,
+	}
+
+	return c.DB.Create(&logEntry).Error
 }
 
 // SaveLog enregistre ou met à jour une entrée de journal dans la base de données

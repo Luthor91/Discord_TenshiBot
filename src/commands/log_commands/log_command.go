@@ -15,7 +15,7 @@ import (
 )
 
 // Commande pour récupérer les logs
-func LogsCommand(s *discordgo.Session, m *discordgo.MessageCreate, service *services.LogService) {
+func LogsCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
@@ -39,26 +39,49 @@ func LogsCommand(s *discordgo.Session, m *discordgo.MessageCreate, service *serv
 		return
 	}
 
-	// Définir des variables pour l'utilisateur et la limite
+	// Définir des variables pour l'utilisateur, le salon et la limite
 	var userID string
+	var channelID string
 	limit := 0
 	var err error
 
 	// Vérifier si l'argument "-n" est présent pour récupérer les logs d'un utilisateur spécifique
-	if args[1] == "-n" && len(args) >= 4 {
-		userID = args[2]
-		// Nettoyer l'ID de l'utilisateur mentionné
-		if strings.HasPrefix(userID, "<@") {
-			userID = strings.Trim(userID, "<@!>")
+	for i, arg := range args {
+		switch arg {
+		case "-n":
+			if i+1 < len(args) {
+				userID = args[i+1]
+				// Nettoyer l'ID de l'utilisateur mentionné
+				if strings.HasPrefix(userID, "<@") {
+					userID = strings.Trim(userID, "<@!>")
+				}
+			}
+		case "-c":
+			if i+1 < len(args) {
+				channelID = args[i+1]
+				// Vérifier si c'est une mention de salon
+				if strings.HasPrefix(channelID, "<#") {
+					channelID = strings.Trim(channelID, "<#>")
+				}
+			}
 		}
-		// Extraire la limite (nombre de logs à récupérer)
-		limit, err = strconv.Atoi(args[3])
-		if err != nil || limit <= 0 {
-			s.ChannelMessageSend(m.ChannelID, "Veuillez indiquer un nombre valide de logs.")
+	}
+
+	// Extraire la limite (nombre de logs à récupérer) depuis les arguments
+	if userID != "" {
+		// Si un utilisateur est spécifié, la limite doit être le prochain argument
+		if len(args) >= 4 {
+			limit, err = strconv.Atoi(args[len(args)-1]) // Dernier argument après les options
+			if err != nil || limit <= 0 {
+				s.ChannelMessageSend(m.ChannelID, "Veuillez indiquer un nombre valide de logs.")
+				return
+			}
+		} else {
+			s.ChannelMessageSend(m.ChannelID, "Veuillez indiquer combien de logs vous voulez récupérer.")
 			return
 		}
 	} else {
-		// Pas de "-n", donc récupérer les derniers logs globaux
+		// Pas d'utilisateur spécifié, la limite est le premier argument
 		limit, err = strconv.Atoi(args[1])
 		if err != nil || limit <= 0 {
 			s.ChannelMessageSend(m.ChannelID, "Veuillez indiquer un nombre valide de logs.")
@@ -66,19 +89,36 @@ func LogsCommand(s *discordgo.Session, m *discordgo.MessageCreate, service *serv
 		}
 	}
 
-	// Récupérer les logs selon le contexte (utilisateur ou logs globaux)
+	// Récupérer les logs selon le contexte (utilisateur, salon, ou logs globaux)
 	var logs []models.Log
-	if userID != "" {
+	logService := services.NewLogService()
+	if userID != "" && channelID != "" {
+		// Récupérer les logs de l'utilisateur spécifié dans le salon spécifié
+		logs, err = logService.GetLogsByUserAndChannel(userID, channelID, limit)
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, "Erreur lors de la récupération des logs de l'utilisateur dans le salon spécifié.")
+			log.Printf("Erreur lors de la récupération des logs de l'utilisateur %s dans le salon %s : %v", userID, channelID, err)
+			return
+		}
+	} else if userID != "" {
 		// Récupérer les logs de l'utilisateur spécifié
-		logs, err = service.GetLogsByUser(userID, limit)
+		logs, err = logService.GetLogsByUser(userID, limit)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Erreur lors de la récupération des logs de l'utilisateur.")
 			log.Printf("Erreur lors de la récupération des logs de l'utilisateur %s : %v", userID, err)
 			return
 		}
+	} else if channelID != "" {
+		// Récupérer les logs du salon spécifié
+		logs, err = logService.GetLogsByChannel(channelID, limit)
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, "Erreur lors de la récupération des logs du salon.")
+			log.Printf("Erreur lors de la récupération des logs du salon %s : %v", channelID, err)
+			return
+		}
 	} else {
 		// Récupérer les derniers logs globaux
-		logs, err = service.GetLastLogs(limit)
+		logs, err = logService.GetLastLogs(limit)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Erreur lors de la récupération des logs.")
 			log.Printf("Erreur lors de la récupération des logs : %v", err)

@@ -2,10 +2,9 @@ package money_commands
 
 import (
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
-
-	"math/rand"
 	"time"
 
 	"github.com/Luthor91/Tenshi/controllers"
@@ -16,28 +15,29 @@ import (
 // Fonction pour afficher un message d'aide
 func displayHelpMessage(s *discordgo.Session, channelID string) {
 	message := "Utilisation de la commande money:\n" +
-		"-n : Mentionner un utilisateur\n" +
+		"-n : Utiliser le nom d'utilisateur\n" +
 		"-r [montant] : Retirer de l'argent\n" +
 		"-d : Récompense quotidienne\n" +
 		"-m : Afficher votre solde\n" +
-		"-g [montant] : Donner de l'argent à un utilisateur mentionné\n" +
+		"-g [montant] : Donner de l'argent à un utilisateur\n" +
 		"-s [montant] : Définir l'argent d'un utilisateur (admin uniquement)"
 	s.ChannelMessageSend(channelID, message)
 }
 
-// Gérer la mention d'un utilisateur
+// Gérer le ciblage d'un utilisateur par son nom
 func handleTarget(s *discordgo.Session, m *discordgo.MessageCreate) *discordgo.User {
 	args := strings.Fields(m.Content)
 
 	if len(args) < 3 || args[1] != "-n" {
-		s.ChannelMessageSend(m.ChannelID, "Veuillez utiliser la commande avec -n suivi du pseudo, nom d'utilisateur ou mention.")
+		s.ChannelMessageSend(m.ChannelID, "Veuillez utiliser la commande avec -n suivi du nom d'utilisateur.")
 		return nil
 	}
 
 	target := args[2]
 
+	// Vérification des utilisateurs dans les mentions
 	for _, mention := range m.Mentions {
-		if mention.ID == target {
+		if mention.Username == target || fmt.Sprintf("%s#%s", mention.Username, mention.Discriminator) == target {
 			return mention
 		}
 	}
@@ -147,5 +147,5 @@ func handleSetMoney(s *discordgo.Session, m *discordgo.MessageCreate, args []str
 func handleShowUserBalance(s *discordgo.Session, m *discordgo.MessageCreate) {
 	userID := m.Author.ID
 	balance, _ := services.NewUserService().GetMoney(userID)
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%s>, votre solde est de %d.", userID, balance))
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s, votre solde est de %d.", m.Author.Username, balance))
 }

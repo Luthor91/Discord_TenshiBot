@@ -34,12 +34,15 @@ func (controller *UserController) UserExistsByID(userID uint) (bool, error) {
 // UserExistsByDiscordID vérifie si un utilisateur existe en utilisant son ID Discord
 func (controller *UserController) UserExistsByDiscordID(userDiscordID string) (bool, error) {
 	var user models.User
-	result := controller.DB.Where("user_discord_id = ?", userDiscordID).First(&user)
+	result := controller.DB.Where("user_discord_id = ?", userDiscordID).Find(&user)
 
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	// Vérifie si des lignes ont été trouvées
+	if result.RowsAffected == 0 {
 		return false, nil // L'utilisateur n'existe pas
 	}
-	return result.Error == nil, result.Error // Retourne vrai si l'utilisateur existe
+
+	// Retourne vrai si l'utilisateur existe, ou une erreur si elle s'est produite
+	return true, result.Error
 }
 
 // GetAllUsers récupère tous les utilisateurs
@@ -88,28 +91,40 @@ func (ctrl *UserController) CreateUser(userID, username string, affinity, money,
 		RankExperience:  rankExperience,
 		RankAffinity:    rankAffinity,
 	}
-	if err := ctrl.DB.Create(&user).Error; err != nil {
+	// Utiliser FirstOrCreate pour vérifier l'existence de l'utilisateur
+	if err := ctrl.DB.Where(models.User{UserDiscordID: userID}).FirstOrCreate(&user).Error; err != nil {
 		return nil, err
 	}
+
 	return &user, nil
 }
 
 // GetUserByDiscordID récupère un utilisateur par son ID Discord
 func (ctrl *UserController) GetUserByDiscordID(userDiscordID string) (*models.User, error) {
 	var user models.User
-	if err := ctrl.DB.First(&user, "user_discord_id = ?", userDiscordID).Error; err != nil {
-		return nil, err
+	result := ctrl.DB.Where("user_discord_id = ?", userDiscordID).Find(&user)
+
+	// Vérifie si l'utilisateur existe
+	if result.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
 	}
-	return &user, nil
+
+	// Retourne l'utilisateur si trouvé ou l'erreur s'il y en a une
+	return &user, result.Error
 }
 
 // GetUserByID récupère un utilisateur par son identifiant interne
 func (ctrl *UserController) GetUserByID(userID uint) (*models.User, error) {
 	var user models.User
-	if err := ctrl.DB.First(&user, userID).Error; err != nil {
-		return nil, err
+	result := ctrl.DB.Find(&user, userID)
+
+	// Vérifie si l'utilisateur existe
+	if result.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
 	}
-	return &user, nil
+
+	// Retourne l'utilisateur si trouvé ou l'erreur s'il y en a une
+	return &user, result.Error
 }
 
 // SaveUser met à jour ou insère un utilisateur dans la base de données

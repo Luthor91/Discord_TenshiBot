@@ -16,7 +16,6 @@ import (
 	"github.com/Luthor91/Tenshi/commands/stat_commands"
 	"github.com/Luthor91/Tenshi/commands/utility_commands"
 	"github.com/Luthor91/Tenshi/commands/word_commands"
-	"github.com/Luthor91/Tenshi/controllers"
 	"github.com/Luthor91/Tenshi/services"
 
 	"github.com/bwmarrin/discordgo"
@@ -27,8 +26,7 @@ func RegisterHandlers(discord *discordgo.Session) {
 	// Créez les services nécessaires
 	userServices := services.NewUserService()
 	affinityService := services.NewAffinityService(discord)
-	logController := controllers.NewLogController() // Instancier LogController
-	logService := services.NewLogService(logController)
+	logService := services.NewLogService()
 
 	// Créez le service de message avec les services requis
 	messageService := services.NewMessageService(userServices, affinityService, logService)

@@ -49,7 +49,7 @@ func (ctrl *ShopController) GetShopItemByID(id uint) (*models.ShopItem, error) {
 // GetShopItemByName récupère un item de la boutique par son nom
 func (ctrl *ShopController) GetShopItemByName(name string) (*models.ShopItem, error) {
 	var item models.ShopItem
-	result := ctrl.DB.Where("name = ? AND deleted_at IS NULL", name).First(&item)
+	result := ctrl.DB.Where("name = ? AND deleted_at IS NULL", name).Find(&item)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, errors.New("article non trouvé")
@@ -93,6 +93,16 @@ func (ctrl *ShopController) CreateUserShopCooldown(userCooldown *models.UserShop
 		return err
 	}
 	return nil
+}
+
+// IsUserShopCooldownExists vérifie si un cooldown d'achat existe pour un utilisateur et un article spécifiques.
+func (ctrl *ShopController) IsUserShopCooldownExists(userDiscordID string, itemID uint) (bool, error) {
+	var cooldown models.UserShopCooldown
+	result := ctrl.DB.Find(&cooldown, "user_discord_id = ? AND item_id = ?", userDiscordID, itemID)
+	if result.RowsAffected == 0 {
+		return false, nil // Pas de cooldown existant
+	}
+	return true, result.Error // Un cooldown existe
 }
 
 // GetUserShopCooldown renvoie le cooldown d'achat d'un utilisateur pour un article spécifique

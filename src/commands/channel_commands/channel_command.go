@@ -36,7 +36,7 @@ func ChannelCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Récupérer les arguments de la commande
-	channelName, duration, isVoice, shouldLock, createChannelFlag, deleteChannelFlag, err := parseChannelArgs(m)
+	channelName, duration, isVoice, shouldLock, createChannelFlag, deleteChannelFlag, archiveMessagesCount, err := parseChannelArgs(m)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, err.Error())
 		return
@@ -44,7 +44,7 @@ func ChannelCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Créer un salon si l'option -c est présente
 	if createChannelFlag {
-		err := createChannel(s, m.GuildID, m.ChannelID, channelName, isVoice, duration)
+		err := discord.CreateChannel(s, m.GuildID, m.ChannelID, channelName, isVoice, duration)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Erreur lors de la création du salon : "+err.Error())
 		}
@@ -52,7 +52,7 @@ func ChannelCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Supprimer un salon si l'option -d est présente
 	if deleteChannelFlag {
-		err := deleteChannel(s, m.GuildID, m.ChannelID, channelName)
+		err := discord.DeleteChannel(s, m.GuildID, m.ChannelID, channelName)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Erreur lors de la suppression du salon : "+err.Error())
 		}
@@ -60,9 +60,17 @@ func ChannelCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Verrouiller ou déverrouiller un salon si l'option -l est présente
 	if shouldLock {
-		err := handleChannelLock(s, m, m.ChannelID, duration)
+		err := discord.HandleChannelLock(s, m, m.ChannelID, duration)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Erreur lors de la gestion du verrouillage du salon : "+err.Error())
+		}
+	}
+
+	// Archive messages si l'option -a est présente
+	if archiveMessagesCount > 0 {
+		err := archiveMessages(s, m, archiveMessagesCount)
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, "Erreur lors de l'archivage des messages : "+err.Error())
 		}
 	}
 }

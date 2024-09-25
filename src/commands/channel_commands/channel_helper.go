@@ -2,10 +2,11 @@ package channel_commands
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/Luthor91/Tenshi/api/discord"
+	"github.com/Luthor91/Tenshi/services"
 	"github.com/Luthor91/Tenshi/utils"
 	"github.com/bwmarrin/discordgo"
 )
@@ -27,7 +28,7 @@ Arguments disponibles :
 }
 
 // Récupérer et analyser les arguments de la commande
-func parseChannelArgs(m *discordgo.MessageCreate) (string, time.Duration, bool, bool, bool, bool, error) {
+func parseChannelArgs(m *discordgo.MessageCreate) (string, time.Duration, bool, bool, bool, bool, int, error) {
 	args := strings.Fields(m.Content)
 	var (
 		duration      time.Duration
@@ -36,6 +37,7 @@ func parseChannelArgs(m *discordgo.MessageCreate) (string, time.Duration, bool, 
 		shouldLock    bool
 		createChannel bool
 		deleteChannel bool
+		messageCount  int // Nouvelle variable pour le nombre de messages à récupérer
 		err           error
 	)
 
@@ -45,7 +47,7 @@ func parseChannelArgs(m *discordgo.MessageCreate) (string, time.Duration, bool, 
 			if i+1 < len(args) {
 				duration, err = utils.ParseDuration(args[i+1])
 				if err != nil {
-					return "", 0, false, false, false, false, fmt.Errorf("temps non valide")
+					return "", 0, false, false, false, false, 0, fmt.Errorf("temps non valide")
 				}
 			}
 		case "-n":
@@ -60,6 +62,13 @@ func parseChannelArgs(m *discordgo.MessageCreate) (string, time.Duration, bool, 
 			createChannel = true
 		case "-d":
 			deleteChannel = true
+		case "-a":
+			if i+1 < len(args) {
+				messageCount, err = strconv.Atoi(args[i+1]) // Convertir le nombre de messages en entier
+				if err != nil {
+					return "", 0, false, false, false, false, 0, fmt.Errorf("nombre de messages non valide")
+				}
+			}
 		}
 	}
 
@@ -67,99 +76,31 @@ func parseChannelArgs(m *discordgo.MessageCreate) (string, time.Duration, bool, 
 		channelName = "channel"
 	}
 
-	return channelName, duration, isVoice, shouldLock, createChannel, deleteChannel, nil
+	return channelName, duration, isVoice, shouldLock, createChannel, deleteChannel, messageCount, nil
 }
 
-// Créer un salon
-func createChannel(s *discordgo.Session, guildID, channelID, channelName string, isVoice bool, duration time.Duration) error {
-	channelType := discordgo.ChannelTypeGuildText
-	if isVoice {
-		channelType = discordgo.ChannelTypeGuildVoice
+// archiveMessages récupère les derniers messages d'un salon et les archive dans la base de données
+func archiveMessages(s *discordgo.Session, m *discordgo.MessageCreate, archiveMessagesCount int) error {
+	// Vérifie que le nombre de messages à archiver est valide
+	if archiveMessagesCount <= 0 {
+		return fmt.Errorf("le nombre de messages à archiver doit être supérieur à zéro")
 	}
 
-	channel, err := s.GuildChannelCreate(guildID, channelName, channelType)
+	// Récupérer les derniers messages du salon
+	messages, err := s.ChannelMessages(m.ChannelID, archiveMessagesCount, "", "", "")
 	if err != nil {
-		return err
+		return fmt.Errorf("erreur lors de la récupération des messages : %w", err)
 	}
 
-	s.ChannelMessageSend(channelID, "Salon créé : <#"+channel.ID+">")
+	// Créer une instance du service de log
+	logService := services.NewLogService()
 
-	// Si une durée est définie, supprimer le salon après cette durée
-	if duration > 0 {
-		go func() {
-			time.Sleep(duration)
-			s.ChannelDelete(channel.ID)
-		}()
-	}
-
-	return nil
-}
-
-// Supprimer un salon
-func deleteChannel(s *discordgo.Session, guildID, channelID, channelName string) error {
-	channels, err := s.GuildChannels(guildID)
-	if err != nil {
-		return err
-	}
-
-	var channelToDelete *discordgo.Channel
-	for _, channel := range channels {
-		if channel.Name == channelName {
-			channelToDelete = channel
-			break
-		}
-	}
-
-	if channelToDelete == nil {
-		return fmt.Errorf("salon non trouvé")
-	}
-
-	if _, err := s.ChannelDelete(channelToDelete.ID); err != nil {
-		return err
-	}
-
-	s.ChannelMessageSend(channelID, "Salon supprimé : "+channelName)
-	return nil
-}
-
-// Verrouiller ou déverrouiller un salon
-func handleChannelLock(s *discordgo.Session, m *discordgo.MessageCreate, channelID string, duration time.Duration) error {
-	// Récupérer le salon directement depuis l'API
-	channel, err := s.Channel(channelID)
-	if err != nil {
-		return fmt.Errorf("erreur lors de la récupération du salon (ID: %s) : %v", channelID, err)
-	}
-
-	// Récupérer l'ID du rôle @everyone
-	guild, err := s.Guild(m.GuildID)
-	if err != nil {
-		return fmt.Errorf("erreur lors de la récupération de la guilde : %v", err)
-	}
-	everyoneRoleID := guild.ID // L'ID du rôle @everyone est l'ID de la guilde
-
-	// Vérifier le statut de verrouillage
-	if discord.IsLocked(channel) {
-		// Déverrouiller le salon
-		err = s.ChannelPermissionSet(channelID, everyoneRoleID, discordgo.PermissionOverwriteTypeRole, 0, discordgo.PermissionSendMessages)
+	// Archive chaque message en utilisant le service de log
+	for _, msg := range messages {
+		err = logService.InsertLog(s, msg) // Enregistrer le message dans la base de données
 		if err != nil {
-			return fmt.Errorf("erreur lors du déverrouillage du salon (ID: %s) : %v", channel.ID, err)
+			return fmt.Errorf("erreur lors de l'enregistrement du message dans la base de données : %w", err)
 		}
-		s.ChannelMessageSend(m.ChannelID, "Salon déverrouillé.")
-	} else {
-		// Verrouiller le salon
-		err = s.ChannelPermissionSet(channelID, everyoneRoleID, discordgo.PermissionOverwriteTypeRole, discordgo.PermissionSendMessages, 0)
-		if err != nil {
-			return fmt.Errorf("erreur lors du verrouillage du salon (ID: %s) : %v", channel.ID, err)
-		}
-		s.ChannelMessageSend(m.ChannelID, "Salon verrouillé.")
-	}
-
-	// Si une durée est définie, déverrouiller après cette durée
-	if duration > 0 {
-		go func() {
-			time.Sleep(duration)
-			s.ChannelPermissionSet(channelID, everyoneRoleID, discordgo.PermissionOverwriteTypeRole, 0, discordgo.PermissionSendMessages)
-		}()
 	}
 
 	return nil

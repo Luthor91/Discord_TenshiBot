@@ -22,28 +22,18 @@ func MigrateAllPostgresql(db *gorm.DB) {
 	SeedShopItems(db)
 
 }
-
-// SeedShopItems insère des articles dans la table des items du shop
 func SeedShopItems(db *gorm.DB) {
 	items := []models.ShopItem{
-		{Name: "50 XP", Price: 100, Cooldown: 3600, Emoji: "1️⃣"}, // 1 heure en secondes
-		{Name: "500 XP", Price: 1000, Cooldown: 3600, Emoji: "2️⃣"},
-		{Name: "XP", Price: 100, Cooldown: 3600, Emoji: "3️⃣"},            // Prix sera calculé
-		{Name: "Timeout", Price: 5000, Cooldown: 3600 * 10, Emoji: "4️⃣"}, // 5 minutes en secondes
+		{Name: "smolpack", Price: 100, Cooldown: 3600, Emoji: "1️⃣"}, // 1 heure en secondes
+		{Name: "pack", Price: 1050, Cooldown: 3600 * 5, Emoji: "2️⃣"},
+		{Name: "bigpack", Price: 1100, Cooldown: 3600 * 24, Emoji: "3️⃣"},
+		{Name: "timeout", Price: 5000, Cooldown: 3600 * 48, Emoji: "4️⃣"}, // 48 heures en secondes
 	}
 
 	for _, item := range items {
-		// Vérifie si l'item existe déjà pour éviter les doublons
-		var existingItem models.ShopItem
-		if err := db.Where("name = ?", item.Name).First(&existingItem).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
-				// Si l'item n'existe pas, l'insérer
-				if err := db.Create(&item).Error; err != nil {
-					log.Println("Erreur lors de l'insertion de l'article dans la base de données:", err)
-				}
-			} else {
-				log.Println("Erreur lors de la vérification de l'article:", err)
-			}
+		// Utilise FirstOrCreate pour vérifier si l'item existe déjà ou le créer
+		if err := db.Where(models.ShopItem{Name: item.Name}).FirstOrCreate(&item).Error; err != nil {
+			log.Println("Erreur lors de la création ou de la récupération de l'article dans la base de données:", err)
 		}
 	}
 }

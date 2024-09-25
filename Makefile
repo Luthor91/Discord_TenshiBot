@@ -1,18 +1,10 @@
 PROJECT_DIR := $(CURDIR)/src
 EXEC := Bot_Tenshi
-
-# Definir les variables d'extension et de commande en fonction du système d'exploitation
-ifeq ($(OS),Windows_NT)
-	EXT := .exe
-	BUILD_CMD := go build -o $(EXEC)$(EXT)
-	RUN_CMD := .\$(EXEC)$(EXT)
-	CREATE_DB_CMD := psql -U postgres -c "CREATE DATABASE $(DB_NAME)"
-else
-	EXT :=
-	BUILD_CMD := go build -o $(EXEC)
-	RUN_CMD := ./$(EXEC)
-	CREATE_DB_CMD := psql -U postgres -c "CREATE DATABASE $(DB_NAME)"
-endif
+EXT := $(if $(findstring Windows_NT,$(OS)),.exe,)
+BUILD_CMD := go build -o $(EXEC)$(EXT)
+RUN_CMD := ./$(EXEC)$(EXT)
+CREATE_DB_CMD := psql -U postgres -c "CREATE DATABASE $(DB_NAME)"
+DROP_DB_CMD := psql -U postgres -c "DROP DATABASE IF EXISTS $(DB_NAME)"
 
 # Charger les variables d'environnement depuis le fichier .env
 ifneq (,$(wildcard $(PROJECT_DIR)/.env))
@@ -20,67 +12,45 @@ ifneq (,$(wildcard $(PROJECT_DIR)/.env))
   export
 endif
 
-# Cible pour preparer les modules Go
+# Vérification de la variable DB_NAME
+check_db_name:
+	@if [ -z "$(DB_NAME)" ]; then \
+		echo "Erreur : La variable d'environnement DB_NAME n'est pas définie."; \
+		exit 1; \
+	fi
+
+# Création de la base de données
+create_db: check_db_name
+	@echo "Création de la base de données : $(DB_NAME)"
+	@$(CREATE_DB_CMD)
+	@echo "Base de données $(DB_NAME) créée avec succès."
+
+# Suppression de la base de données
+delete_db: check_db_name
+	@echo "Suppression de la base de données : $(DB_NAME)"
+	@$(DROP_DB_CMD)
+	@echo "Base de données $(DB_NAME) supprimée avec succès."
+
+# Préparation des modules Go
 setup:
 	cd $(PROJECT_DIR) && go mod tidy
 
-# Cible pour construire le projet
+# Construction du projet
 build:
 	cd $(PROJECT_DIR) && $(BUILD_CMD)
 
-# Cible pour executer le projet
+# Exécution du projet
 run:
 	cd $(PROJECT_DIR) && $(RUN_CMD)
 
-# Cible pour creer la base de donnees
-create_db:
-ifeq ($(OS),Windows_NT)
-	@if "$(DB_NAME)"=="" ( \
-		echo Erreur : La variable d'environnement DB_NAME n'est pas definie. ;\
-		exit 1 ;\
-	) else ( \
-		echo Creation de la base de donnees : $(DB_NAME) ;\
-		$(CREATE_DB_CMD) ;\
-		echo Base de donnees $(DB_NAME) creee avec succès. ;\
-	)
-else
-	@if [ -z "$(DB_NAME)" ]; then \
-		echo "Erreur : La variable d'environnement DB_NAME n'est pas definie."; \
-		exit 1; \
-	else \
-		echo "Creation de la base de donnees : $(DB_NAME)"; \
-		$(CREATE_DB_CMD); \
-		echo "Base de donnees $(DB_NAME) creee avec succès."; \
-	fi
-endif
-
-# Cible pour supprimer la base de données
-reset:
-ifeq ($(OS),Windows_NT)
-	@if "$(DB_NAME)"=="" ( \
-		echo Erreur : La variable d'environnement DB_NAME n'est pas definie. ;\
-		exit 1 ;\
-	) else ( \
-		echo Suppression de la base de donnees : $(DB_NAME) ;\
-		psql -U postgres -c "DROP DATABASE IF EXISTS $(DB_NAME)";\
-		echo Base de donnees $(DB_NAME) supprimee avec succes. ;\
-	)
-else
-	@if [ -z "$(DB_NAME)" ]; then \
-		echo "Erreur : La variable d'environnement DB_NAME n'est pas definie."; \
-		exit 1; \
-	else \
-		echo "Suppression de la base de donnees : $(DB_NAME)"; \
-		psql -U postgres -c "DROP DATABASE IF EXISTS $(DB_NAME)"; \
-		echo "Base de donnees $(DB_NAME) supprimee avec succes."; \
-	fi
-endif
-
-# Cible pour nettoyer le projet et le cache
+# Nettoyage des fichiers de build
 clean:
 	cd $(PROJECT_DIR) && rm -f $(EXEC)$(EXT) && go clean -modcache
 
-# Cible pour tout construire et executer sur le système d'exploitation detecte
-all: setup build run
+# Cible pour tout détruire, recréer et exécuter
+reboot: clean delete_db create_db setup build run
 
-.PHONY: setup build run create_db clean all
+# Cible pour préparer, construire et exécuter sans rien détruire
+exec: setup build run
+
+.PHONY: check_db_name create_db delete_db setup build run clean reboot exec

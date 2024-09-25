@@ -17,9 +17,9 @@ type LogService struct {
 }
 
 // NewLogService crée une nouvelle instance de LogService
-func NewLogService(logCtrl *controllers.LogController) *LogService {
+func NewLogService() *LogService {
 	return &LogService{
-		logCtrl: logCtrl,
+		logCtrl: controllers.NewLogController(),
 	}
 }
 
@@ -44,6 +44,32 @@ func (service *LogService) GetLogsByUser(userID string, limit int) ([]models.Log
 	logs, err := service.logCtrl.GetLogsByUser(userID, limit)
 	if err != nil {
 		log.Printf("Erreur lors de la récupération des logs pour l'utilisateur %s: %v", userID, err)
+		return nil, err
+	}
+	return logs, nil
+}
+
+// GetLogsByUserAndChannel récupère les logs d'un utilisateur dans un canal spécifique
+func (service *LogService) GetLogsByUserAndChannel(userID, channelID string, limit int) ([]models.Log, error) {
+	service.mu.Lock()
+	defer service.mu.Unlock()
+
+	logs, err := service.logCtrl.GetLogsByUserAndChannel(userID, channelID, limit)
+	if err != nil {
+		log.Printf("Erreur lors de la récupération des logs pour l'utilisateur %s dans le canal %s: %v", userID, channelID, err)
+		return nil, err
+	}
+	return logs, nil
+}
+
+// GetLogsByChannel récupère les logs d'un canal spécifique
+func (service *LogService) GetLogsByChannel(channelID string, limit int) ([]models.Log, error) {
+	service.mu.Lock()
+	defer service.mu.Unlock()
+
+	logs, err := service.logCtrl.GetLogsByChannel(channelID, limit)
+	if err != nil {
+		log.Printf("Erreur lors de la récupération des logs pour le canal %s: %v", channelID, err)
 		return nil, err
 	}
 	return logs, nil
@@ -87,4 +113,9 @@ func (service *LogService) LogMessage(s *discordgo.Session, m *discordgo.Message
 	}
 
 	return nil
+}
+
+// ArchiveMessage insère un log dans la base de données
+func (s *LogService) InsertLog(session *discordgo.Session, msg *discordgo.Message) error {
+	return s.logCtrl.InsertLog(session, msg)
 }

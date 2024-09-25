@@ -117,7 +117,6 @@ func handleRemoveXP(s *discordgo.Session, m *discordgo.MessageCreate, userID str
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("XP réduite à %d.", newXP))
 }
 
-// handleSetXP définit une quantité d'XP pour l'utilisateur spécifié
 func handleSetXP(s *discordgo.Session, m *discordgo.MessageCreate, userID string, amount int) {
 	userService := services.NewUserService()
 	err := userService.SetExperience(userID, amount)
@@ -125,10 +124,10 @@ func handleSetXP(s *discordgo.Session, m *discordgo.MessageCreate, userID string
 		utils.SendErrorMessage(s, m.ChannelID, "Erreur lors de la définition de l'XP")
 		return
 	}
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("XP de %s définie à %d.", userID, amount))
+	user, _ := s.User(userID)
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("XP de %s définie à %d.", user.Username, amount))
 }
 
-// handleAddXP ajoute une quantité d'XP à l'utilisateur spécifié
 func handleAddXP(s *discordgo.Session, m *discordgo.MessageCreate, userID string, amount int) {
 	userService := services.NewUserService()
 	user, err := userService.GetUserByDiscordID(userID)
@@ -149,7 +148,8 @@ func handleAddXP(s *discordgo.Session, m *discordgo.MessageCreate, userID string
 		return
 	}
 
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("XP augmentée à %d.", newXP))
+	discordUser, _ := s.User(userID)
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("XP de %s augmentée à %d.", discordUser.Username, newXP))
 }
 
 // handleGetXP affiche l'XP de l'utilisateur spécifié
@@ -160,7 +160,8 @@ func handleGetXP(s *discordgo.Session, m *discordgo.MessageCreate, userID string
 		utils.SendErrorMessage(s, m.ChannelID, "Utilisateur non trouvé ou erreur lors de la récupération de l'XP")
 		return
 	}
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("XP actuelle : %d", amount))
+	user, _ := s.User(userID)
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s, votre expérience est de %d.", user.Username, amount))
 }
 
 // handleGiveXP permet à un utilisateur de donner une quantité d'XP à un autre utilisateur
@@ -199,5 +200,7 @@ func handleGiveXP(s *discordgo.Session, m *discordgo.MessageCreate, giverID, rec
 		return
 	}
 
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s a donné %d XP à %s. XP restante pour %s : %d.", m.Author.Username, amount, receiverID, giverID, newGiverXP))
+	giver, _ := s.User(giverID)
+	receiver, _ := s.User(receiverID)
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s a donné %d XP à %s. XP restante pour %s : %d.", giver.Username, amount, receiver.Username, giver.Username, newGiverXP))
 }
