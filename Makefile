@@ -53,4 +53,5 @@ reboot: clean delete_db create_db setup build run
 # Cible pour préparer, construire et exécuter sans rien détruire
 exec: setup build run
 
+deploy: create_db exec
 .PHONY: check_db_name create_db delete_db setup build run clean reboot exec
