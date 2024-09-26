@@ -7,8 +7,6 @@ import (
 )
 
 func main() {
-	//go utils.PrintMemoryUsage(10)
-
 	config.LoadConfig()
 	database.InitDatabase()
 	config.CheckConfig()

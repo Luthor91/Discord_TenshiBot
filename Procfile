@@ -1,1 +1,1 @@
-web make deploy
+web: make -C src deploy
