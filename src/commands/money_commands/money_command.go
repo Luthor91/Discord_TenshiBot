@@ -33,18 +33,21 @@ func MoneyCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Indicateur pour savoir si les réponses doivent être affichées
 	showResponses := false
-	if len(parsedArgs) > 0 && parsedArgs[0].Arg == "-v" {
-		showResponses = true
-		parsedArgs = parsedArgs[1:] // Supprime -v des arguments pour le traitement
+	for _, arg := range parsedArgs {
+		if arg.Arg == "-v" {
+			showResponses = true
+			break // Sortie une fois qu'on a trouvé -v
+		}
 	}
 
+	// Si aucune option n'est spécifiée, retourner le solde de l'utilisateur
 	if len(parsedArgs) == 0 {
 		money, err := services.NewUserService().GetMoney(m.Author.ID)
 		if err != nil {
-			s.ChannelMessageSend(m.ChannelID, "Erreur lors de la récupération du solde.")
+			utils.SendResponse(s, m.ChannelID, "Erreur lors de la récupération du solde.", showResponses)
 			return
 		}
-		utils.SendResponse(s, m.ChannelID, fmt.Sprintf("%s a %d unités de monnaie.", m.Author.Username, money), showResponses)
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s, votre money est de %d.", m.Author.Username, money))
 		return
 	}
 
@@ -81,7 +84,6 @@ func MoneyCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 				utils.SendResponse(s, m.ChannelID, fmt.Sprintf("Vous devez attendre encore %v avant de réclamer la prochaine récompense quotidienne.", timeLeft.Round(time.Minute)), showResponses)
 				return
 			}
-
 			randomAmount := rand.Intn(91) + 10
 			services.NewUserService().UpdateDailyMoney(m.Author.ID, randomAmount)
 			utils.SendResponse(s, m.ChannelID, fmt.Sprintf("Vous avez reçu %d unités aujourd'hui !", randomAmount), showResponses)

@@ -9,6 +9,7 @@ import (
 	"github.com/Luthor91/Tenshi/api/discord"
 	"github.com/Luthor91/Tenshi/config"
 	"github.com/Luthor91/Tenshi/services"
+	"github.com/Luthor91/Tenshi/utils"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -33,6 +34,18 @@ func AffinityCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	parsedArgs, err := discord.ExtractArguments(m.Content, command)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Utilisation : ?affinity [-n <utilisateur>] [-r <quantité>] [-s <quantité>] [-a <quantité>] [-g] [-t] [-v]")
+		return
+	}
+
+	// Si aucun argument n'est passé, afficher l'affinity de l'utilisateur qui a envoyé la commande
+	if len(parsedArgs) == 0 {
+		userService := services.NewUserService() // Crée une instance du UserService
+		amount, err := userService.GetAffinity(m.Author.ID)
+		if err != nil {
+			utils.SendErrorMessage(s, m.ChannelID, "Erreur lors de la récupération de l'XP.")
+			return
+		}
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s, votre affinité est de %d.", m.Author.Username, amount))
 		return
 	}
 

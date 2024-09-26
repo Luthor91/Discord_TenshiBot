@@ -72,7 +72,7 @@ func HandleChannel(s *discordgo.Session, m *discordgo.MessageCreate, target stri
 func ExtractArguments(content, command string) ([]Argument, error) {
 	args := strings.Fields(strings.TrimPrefix(content, command))
 	if len(args) < 1 {
-		return nil, fmt.Errorf("erreur ExtractArguments")
+		return nil, nil
 	}
 
 	var parsedArgs []Argument
