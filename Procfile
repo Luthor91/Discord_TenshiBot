@@ -1,1 +1,1 @@
-web: make -C src deploy
+web: cd src && go run main.go
