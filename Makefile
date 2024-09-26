@@ -3,8 +3,6 @@ EXEC := Bot_Tenshi
 EXT := $(if $(findstring Windows_NT,$(OS)),.exe,)
 BUILD_CMD := go build -o $(EXEC)$(EXT)
 RUN_CMD := ./$(EXEC)$(EXT)
-CREATE_DB_CMD := psql -U postgres -c "CREATE DATABASE $(DB_NAME)"
-DROP_DB_CMD := psql -U postgres -c "DROP DATABASE IF EXISTS $(DB_NAME)"
 
 # Charger les variables d'environnement depuis le fichier .env
 ifneq (,$(wildcard $(PROJECT_DIR)/.env))
@@ -22,14 +20,16 @@ check_db_name:
 # Création de la base de données
 create_db: check_db_name
 	@echo "Création de la base de données : $(DB_NAME)"
-	@$(CREATE_DB_CMD)
+	@psql -U postgres -c "CREATE DATABASE $(DB_NAME)"
 	@echo "Base de données $(DB_NAME) créée avec succès."
 
 # Suppression de la base de données
 delete_db: check_db_name
 	@echo "Suppression de la base de données : $(DB_NAME)"
-	@$(DROP_DB_CMD)
+	@echo "Commande SQL : DROP DATABASE IF EXISTS $(DB_NAME)"
+	@psql -U postgres -c "DROP DATABASE IF EXISTS $(DB_NAME)"
 	@echo "Base de données $(DB_NAME) supprimée avec succès."
+
 
 # Préparation des modules Go
 setup:

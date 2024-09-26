@@ -12,8 +12,6 @@ Avant d'installer TenshiBot, assurez-vous d'avoir les éléments suivants :
 
 ## Installation
 
-### 1. Cloner le dépôt
-
 Clonez le dépôt GitHub sur votre machine locale :
 
 ```bash
@@ -21,14 +19,23 @@ git clone https://github.com/Luthor91/Discord_TenshiBot.git
 cd Discord_TenshiBot
 ```
 
-### 2. Installer les dépendances
-
-```bash
-make create_db
-```
-
 ## Exécution
 
+Pour la première exécution ou si vous voulez relancer le programme en faisant un reset de la base de données, il est recommandé d'effectuer la commande ci-dessous, elle permet de ré-installer les dépendances de zéro.
+
 ```bash
-make all
+make reboot
 ```
+
+Pour les exécutions suivantes, il est conseillé d'effectuer la commande ci-dessous.
+
+```bash
+make exec
+```
+
+## Structure
+
+Le code suit une structure avec des Controller pour gérer les interractions avec la base de données, des Services qui appelleront les Controllers et ajouteront une logique en plus si nécessaire.
+
+Les commandes discord sont regroupé dans le dossier commands.
+

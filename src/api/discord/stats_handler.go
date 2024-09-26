@@ -28,8 +28,10 @@ func PrintServerStats(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	response := fmt.Sprintf("**Statistiques du serveur :**\n- Nom: %s\n- ID: %s\n- Membres: %d\n- Rôles: %d\n- Canaux: %d",
-		guild.Name, guild.ID, guild.MemberCount, len(guild.Roles), len(guild.Channels))
+	response := fmt.Sprintf(
+		"**Statistiques du serveur :**\n- Nom: %s\n- ID: %s\n- Membres: %d\n- Rôles: %d\n- Canaux: %d",
+		guild.Name, guild.ID, guild.MemberCount, len(guild.Roles), len(guild.Channels),
+	)
 	s.ChannelMessageSend(m.ChannelID, response)
 }
 
