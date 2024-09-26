@@ -1,5 +1,8 @@
 module github.com/Luthor91/Tenshi
 
+
+// +heroku goVersion go1.23
+// +heroku install github.com/Luthor91/Tenshi
 go 1.23.1
 
 require (
