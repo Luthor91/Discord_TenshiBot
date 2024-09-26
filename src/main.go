@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	config.LoadConfig()
+	config.LoadConfig(false)
 	database.InitDatabase()
 	config.CheckConfig()
 	core.Run()

@@ -16,11 +16,11 @@ import (
 
 var AppConfig models.Config
 
-// LoadConfig charge la configuration depuis un fichier JSON
-func LoadConfig() {
-
-	if err := godotenv.Load(".env"); err != nil {
-		log.Fatalf("Erreur lors du chargement du fichier .env: %v", err)
+func LoadConfig(loadEnv bool) {
+	if loadEnv {
+		if err := godotenv.Load(".env"); err != nil {
+			log.Fatalf("Erreur lors du chargement du fichier .env: %v", err)
+		}
 	}
 
 	client := golio.NewClient(os.Getenv("API_RIOT"),
@@ -49,7 +49,6 @@ func LoadConfig() {
 		Client:      &http.Client{Timeout: 10 * time.Second},
 		GolioClient: client,
 	}
-
 }
 
 func CheckConfig() {
