@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Luthor91/Tenshi/services"
-	"github.com/Luthor91/Tenshi/utils"
+	"github.com/Luthor91/DiscordBot/services"
+	"github.com/Luthor91/DiscordBot/utils"
 	"github.com/bwmarrin/discordgo"
 )
 

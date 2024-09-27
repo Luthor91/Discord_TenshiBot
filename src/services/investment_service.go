@@ -5,8 +5,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/Luthor91/Tenshi/controllers" // Remplacez par le chemin correct de votre package controllers
-	"github.com/Luthor91/Tenshi/models"
+	"github.com/Luthor91/DiscordBot/controllers" // Remplacez par le chemin correct de votre package controllers
+	"github.com/Luthor91/DiscordBot/models"
 )
 
 // InvestmentService contient la logique pour gérer les investissements.

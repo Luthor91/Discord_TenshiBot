@@ -19,6 +19,14 @@ git clone https://github.com/Luthor91/Discord_TenshiBot.git
 cd Discord_TenshiBot
 ```
 
+Si vous avez le fichier install.sh, vous pouvez installer sur une machine Linux vierge avec les commandes ci-dessous,
+a noter que vous aurez a renseigner le TOKEN du Bot Discord, les clé API de Riot Games et LoLEsport : 
+
+```bash
+chmod +x install.sh
+./install.sh
+```
+
 ## Exécution
 
 Pour la première exécution ou si vous voulez relancer le programme en faisant un reset de la base de données, il est recommandé d'effectuer la commande ci-dessous, elle permet de ré-installer les dépendances de zéro.

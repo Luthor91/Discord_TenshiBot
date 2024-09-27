@@ -3,7 +3,7 @@ package daily_commands
 import (
 	"fmt"
 
-	"github.com/Luthor91/Tenshi/config"
+	"github.com/Luthor91/DiscordBot/config"
 	"github.com/bwmarrin/discordgo"
 )
 

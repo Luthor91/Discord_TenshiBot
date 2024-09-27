@@ -5,8 +5,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/Luthor91/Tenshi/controllers"
-	"github.com/Luthor91/Tenshi/services"
+	"github.com/Luthor91/DiscordBot/controllers"
+	"github.com/Luthor91/DiscordBot/services"
 	"github.com/bwmarrin/discordgo"
 )
 

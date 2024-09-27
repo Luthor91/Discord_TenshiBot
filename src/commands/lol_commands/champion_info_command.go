@@ -5,8 +5,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/Luthor91/Tenshi/api/riot_games"
-	"github.com/Luthor91/Tenshi/config"
+	"github.com/Luthor91/DiscordBot/api/riot_games"
+	"github.com/Luthor91/DiscordBot/config"
 	"github.com/bwmarrin/discordgo"
 )
 

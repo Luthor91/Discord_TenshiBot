@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Luthor91/Tenshi/config"
+	"github.com/Luthor91/DiscordBot/config"
 )
 
 // getStatic fetches static data from the specified URL and decodes it into the provided target structure.

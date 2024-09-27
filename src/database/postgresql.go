@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/Luthor91/Tenshi/database/migration"
+	"github.com/Luthor91/DiscordBot/database/migration"
 	_ "github.com/lib/pq"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

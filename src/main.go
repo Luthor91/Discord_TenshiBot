@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/core"
-	"github.com/Luthor91/Tenshi/database"
+	"github.com/Luthor91/DiscordBot/config"
+	"github.com/Luthor91/DiscordBot/core"
+	"github.com/Luthor91/DiscordBot/database"
 )
 
 func main() {

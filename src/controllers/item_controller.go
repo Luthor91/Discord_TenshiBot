@@ -4,8 +4,8 @@ import (
 	"errors"
 	"log"
 
-	"github.com/Luthor91/Tenshi/database"
-	"github.com/Luthor91/Tenshi/models"
+	"github.com/Luthor91/DiscordBot/database"
+	"github.com/Luthor91/DiscordBot/models"
 	"gorm.io/gorm"
 )
 

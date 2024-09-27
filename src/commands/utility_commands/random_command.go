@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Luthor91/Tenshi/config"
+	"github.com/Luthor91/DiscordBot/config"
 	"github.com/bwmarrin/discordgo"
 )
 

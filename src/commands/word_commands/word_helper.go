@@ -3,7 +3,7 @@ package word_commands
 import (
 	"fmt"
 
-	"github.com/Luthor91/Tenshi/services"
+	"github.com/Luthor91/DiscordBot/services"
 	"github.com/bwmarrin/discordgo"
 )
 

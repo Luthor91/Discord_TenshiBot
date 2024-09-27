@@ -5,8 +5,8 @@ import (
 	"math/rand"
 	"strings"
 
-	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/services"
+	"github.com/Luthor91/DiscordBot/config"
+	"github.com/Luthor91/DiscordBot/services"
 	"github.com/bwmarrin/discordgo"
 )
 

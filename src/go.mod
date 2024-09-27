@@ -1,4 +1,4 @@
-module github.com/Luthor91/Tenshi
+module github.com/Luthor91/DiscordBot
 
 go 1.23.1
 

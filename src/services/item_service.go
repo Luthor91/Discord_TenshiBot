@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/Luthor91/Tenshi/controllers"
-	"github.com/Luthor91/Tenshi/models"
+	"github.com/Luthor91/DiscordBot/controllers"
+	"github.com/Luthor91/DiscordBot/models"
 )
 
 // ItemService est un service pour gérer les items des utilisateurs

@@ -6,9 +6,9 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/Luthor91/Tenshi/commands"
-	"github.com/Luthor91/Tenshi/config"
-	"github.com/Luthor91/Tenshi/utils"
+	"github.com/Luthor91/DiscordBot/commands"
+	"github.com/Luthor91/DiscordBot/config"
+	"github.com/Luthor91/DiscordBot/utils"
 	"github.com/bwmarrin/discordgo"
 )
 

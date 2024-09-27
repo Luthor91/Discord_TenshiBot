@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Luthor91/Tenshi/config"
+	"github.com/Luthor91/DiscordBot/config"
 )
 
 // Helper function for making API requests

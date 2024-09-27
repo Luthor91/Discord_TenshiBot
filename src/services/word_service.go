@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/Luthor91/Tenshi/controllers"
+	"github.com/Luthor91/DiscordBot/controllers"
 )
 
 // WordService gère les opérations liées aux mots

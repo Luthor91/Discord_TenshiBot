@@ -3,9 +3,9 @@ package services
 import (
 	"strings"
 
-	"github.com/Luthor91/Tenshi/controllers"
-	"github.com/Luthor91/Tenshi/database"
-	"github.com/Luthor91/Tenshi/models"
+	"github.com/Luthor91/DiscordBot/controllers"
+	"github.com/Luthor91/DiscordBot/database"
+	"github.com/Luthor91/DiscordBot/models"
 	"github.com/bwmarrin/discordgo"
 )
 

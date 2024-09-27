@@ -9,7 +9,7 @@ import (
 
 	"github.com/KnutZuidema/golio"
 	"github.com/KnutZuidema/golio/api"
-	"github.com/Luthor91/Tenshi/models"
+	"github.com/Luthor91/DiscordBot/models"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 )

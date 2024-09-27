@@ -4,8 +4,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/Luthor91/Tenshi/controllers"
-	"github.com/Luthor91/Tenshi/database"
+	"github.com/Luthor91/DiscordBot/controllers"
+	"github.com/Luthor91/DiscordBot/database"
 	"github.com/bwmarrin/discordgo"
 )
 
