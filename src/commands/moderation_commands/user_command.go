@@ -20,7 +20,6 @@ func ModerateUserCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Vérifier si l'utilisateur est modérateur
 	isMod, err := discord.UserHasModeratorRole(s, m.GuildID, m.Author.ID)
 	if err != nil || !isMod {
-		s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas les permissions nécessaires pour exécuter cette commande.")
 		return
 	}
 

@@ -18,7 +18,6 @@ func WordCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Vérifie si l'utilisateur est modérateur
 	isMod, err := discord.UserHasModeratorRole(s, m.GuildID, m.Author.ID)
 	if err != nil || !isMod {
-		s.ChannelMessageSend(m.ChannelID, "Vous n'avez pas les permissions nécessaires.")
 		return
 	}
 

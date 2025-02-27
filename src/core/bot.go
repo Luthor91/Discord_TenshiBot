@@ -8,6 +8,7 @@ import (
 
 	"github.com/Luthor91/DiscordBot/commands"
 	"github.com/Luthor91/DiscordBot/config"
+	"github.com/Luthor91/DiscordBot/specific_discords/wakteam/scans"
 	"github.com/Luthor91/DiscordBot/utils"
 	"github.com/bwmarrin/discordgo"
 )
@@ -35,6 +36,9 @@ func Run() {
 	}()
 
 	// Garder le bot en fonctionnement jusqu'à une interruption système (ctrl + C)
+	fmt.Println("Bot scanning differents channels on Wakteam....")
+	scans.ScanAndProcessTicketChannel(discord)
+
 	fmt.Println("Bot running....")
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)

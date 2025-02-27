@@ -1,58 +1,86 @@
+# Detection de l'OS (Windows ou Linux)
+ifeq ($(OS),Windows_NT)
+    RM = powershell.exe -Command "Remove-Item -Force -ErrorAction Ignore"
+    PSQL = psql.exe
+    SHELL := powershell.exe
+    
+    # Vérifier si DB_NAME est définie dans l'environnement, sinon utiliser tenshi_db
+    DB_NAME ?= tenshi_db
+else
+    RM = rm -f
+    PSQL = psql
+    SHELL := /bin/bash
+    
+    # Vérifier si DB_NAME est définie dans l'environnement, sinon utiliser tenshi_db
+    DB_NAME ?= tenshi_db
+endif
+
 PROJECT_DIR := $(CURDIR)/src
-EXEC := Bot_Tenshi
+EXEC := $(PROJECT_DIR)/Bot_Tenshi
 EXT := $(if $(findstring Windows_NT,$(OS)),.exe,)
 BUILD_CMD := go build -o $(EXEC)$(EXT)
-RUN_CMD := ./$(EXEC)$(EXT)
+RUN_CMD := $(EXEC)$(EXT)
 
-# Charger les variables d'environnement depuis le fichier .env
+# Charger les variables d'environnement depuis .env (si present)
 ifneq (,$(wildcard $(PROJECT_DIR)/.env))
   include $(PROJECT_DIR)/.env
   export
 endif
 
-# Vérification de la variable DB_NAME
-check_db_name:
-	@if [ -z "$(DB_NAME)" ]; then \
-		echo "Erreur : La variable d'environnement DB_NAME n'est pas définie."; \
-		exit 1; \
-	fi
+# Affichage de la base de données utilisée
+show_db_name:
+	@echo "Utilisation de la base de donnees: $(DB_NAME)"
 
-# Création de la base de données
-create_db: check_db_name
-	@echo "Création de la base de données : $(DB_NAME)"
-	@psql -U postgres -c "CREATE DATABASE $(DB_NAME)"
-	@echo "Base de données $(DB_NAME) créée avec succès."
+# Creation de la base de donnees
+create_db: show_db_name
+	@echo "Creation de la base de donnees : $(DB_NAME)"
+	@$(PSQL) -U postgres -c "CREATE DATABASE $(DB_NAME);"
+	@echo "Base de donnees $(DB_NAME) creee avec succes."
 
-# Suppression de la base de données
-delete_db: check_db_name
-	@echo "Suppression de la base de données : $(DB_NAME)"
-	@echo "Commande SQL : DROP DATABASE IF EXISTS $(DB_NAME)"
-	@psql -U postgres -c "DROP DATABASE IF EXISTS $(DB_NAME)"
-	@echo "Base de données $(DB_NAME) supprimée avec succès."
+# Suppression de la base de donnees
+delete_db: show_db_name
+	@echo "Suppression de la base de donnees : $(DB_NAME)"
+	@$(PSQL) -U postgres -c "DROP DATABASE IF EXISTS $(DB_NAME);"
+	@echo "Base de donnees $(DB_NAME) supprimee avec succes."
 
-
-# Préparation des modules Go
+# Preparation des modules Go
 setup:
-	cd $(PROJECT_DIR) && go mod tidy
+ifeq ($(OS),Windows_NT)
+	@cd $(PROJECT_DIR); go env -w GOPROXY=https://proxy.golang.org,direct; go mod tidy
+else
+	@cd $(PROJECT_DIR) && go env -w GOPROXY=https://proxy.golang.org,direct && go mod tidy
+endif
 
 # Construction du projet
 build:
-	cd $(PROJECT_DIR) && $(BUILD_CMD)
+ifeq ($(OS),Windows_NT)
+	@cd $(PROJECT_DIR); $(BUILD_CMD)
+else
+	@cd $(PROJECT_DIR) && $(BUILD_CMD)
+endif
 
-# Exécution du projet
+# Execution du projet
 run:
-	cd $(PROJECT_DIR) && $(RUN_CMD)
+ifeq ($(OS),Windows_NT)
+	@cd $(PROJECT_DIR); $(RUN_CMD)
+else
+	@cd $(PROJECT_DIR) && $(RUN_CMD)
+endif
 
 # Nettoyage des fichiers de build
 clean:
-	cd $(PROJECT_DIR) && rm -f $(EXEC)$(EXT) && go clean -modcache
+ifeq ($(OS),Windows_NT)
+	@$(SHELL) -Command "cd '$(PROJECT_DIR)'; $(RM) '$(EXEC)$(EXT)'; go clean"
+else
+	@cd $(PROJECT_DIR); $(RM) $(EXEC)$(EXT); go clean
+endif
 
-# Cible pour tout détruire, recréer et exécuter
+# Cible pour tout detruire, recreer et executer
 reboot: clean delete_db create_db setup build run
 
-# Cible pour préparer, construire et exécuter sans rien détruire
+# Cible pour preparer, construire et executer sans rien detruire
 exec: setup build run
 
 deploy: create_db exec
 
-.PHONY: check_db_name create_db delete_db setup build run clean reboot exec
+.PHONY: show_db_name create_db delete_db setup build run clean reboot exec deploy

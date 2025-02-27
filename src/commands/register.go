@@ -17,6 +17,7 @@ import (
 	"github.com/Luthor91/DiscordBot/commands/utility_commands"
 	"github.com/Luthor91/DiscordBot/commands/word_commands"
 	"github.com/Luthor91/DiscordBot/services"
+	"github.com/Luthor91/DiscordBot/specific_discords/wakteam/moderation"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -93,4 +94,9 @@ func RegisterHandlers(discord *discordgo.Session) {
 	discord.AddHandler(lol_commands.ChampionRotationCommand)
 	discord.AddHandler(lol_commands.SummonerProfileCommand)
 	discord.AddHandler(lol_commands.ChampionInfoCommand)
+
+	// Handler spécifiques, Wakteam
+	discord.AddHandler(moderation.OnMessageInTicketChannel)
+	discord.AddHandler(moderation.OnReactionOnTicket)
+
 }
