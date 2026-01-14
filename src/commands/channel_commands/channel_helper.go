@@ -2,81 +2,43 @@ package channel_commands
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/Luthor91/DiscordBot/services"
-	"github.com/Luthor91/DiscordBot/utils"
 	"github.com/bwmarrin/discordgo"
 )
 
-// Afficher les arguments possibles si seul ?channel est utilisé
+// Afficher les arguments possibles pour la commande ?channel
 func showHelpMessage(s *discordgo.Session, channelID string) {
-	helpMessage := `
-**Commande ?channel :**
+	helpMessage := "" +
+		"**Commande : gestion des salons (`?channel`)**\n\n" +
 
-Arguments disponibles :
-- **-n [nom]** : Spécifier le nom du salon (par défaut "channel").
-- **-v** : Spécifier que c'est un salon vocal.
-- **-t [durée]** : Spécifier la durée avant la suppression du salon (exemple : 1h, 30m).
-- **-l** : Verrouiller ou déverrouiller le salon.
-- **-c** : Créer un nouveau salon.
-- **-d** : Supprimer un salon.
-`
+		"**Usage général :**\n" +
+		"`?channel [options] <nom>`\n\n" +
+
+		"**Options disponibles :**\n" +
+		"- `-c`           : créer un nouveau salon\n" +
+		"- `-d`           : supprimer un salon existant\n" +
+		"- `-l`           : verrouiller ou déverrouiller un salon\n" +
+		"- `-v`           : créer un salon vocal\n" +
+		"- `-t <durée>`   : durée avant suppression ou verrouillage (ex : `30s`, `10m`, `1h`)\n" +
+		"- `-h`           : afficher cette aide\n\n" +
+
+		"**Paramètre :**\n" +
+		"- `<nom>` : nom du salon cible (obligatoire pour `-c` et `-d`)\n\n" +
+
+		"**Comportement :**\n" +
+		"- `-c` : crée un salon (texte par défaut, vocal si `-v`)\n" +
+		"- `-d` : supprime le salon spécifié\n" +
+		"- `-l` : verrouille ou déverrouille le salon spécifié\n" +
+		"- `-t` : optionnelle, utilisée pour la suppression différée ou le verrouillage\n\n" +
+
+		"**Exemples :**\n" +
+		"- `?channel -c -t 30s salon-temporaire`\n" +
+		"- `?channel -c -v salon-vocal`\n" +
+		"- `?channel -l salon-prive`\n" +
+		"- `?channel -d salon-a-supprimer`\n"
+
 	s.ChannelMessageSend(channelID, helpMessage)
-}
-
-// Récupérer et analyser les arguments de la commande
-func parseChannelArgs(m *discordgo.MessageCreate) (string, time.Duration, bool, bool, bool, bool, int, error) {
-	args := strings.Fields(m.Content)
-	var (
-		duration      time.Duration
-		channelName   string
-		isVoice       bool
-		shouldLock    bool
-		createChannel bool
-		deleteChannel bool
-		messageCount  int // Nouvelle variable pour le nombre de messages à récupérer
-		err           error
-	)
-
-	for i, arg := range args {
-		switch arg {
-		case "-t":
-			if i+1 < len(args) {
-				duration, err = utils.ParseDuration(args[i+1])
-				if err != nil {
-					return "", 0, false, false, false, false, 0, fmt.Errorf("temps non valide")
-				}
-			}
-		case "-n":
-			if i+1 < len(args) {
-				channelName = args[i+1]
-			}
-		case "-v":
-			isVoice = true
-		case "-l":
-			shouldLock = true
-		case "-c":
-			createChannel = true
-		case "-d":
-			deleteChannel = true
-		case "-a":
-			if i+1 < len(args) {
-				messageCount, err = strconv.Atoi(args[i+1]) // Convertir le nombre de messages en entier
-				if err != nil {
-					return "", 0, false, false, false, false, 0, fmt.Errorf("nombre de messages non valide")
-				}
-			}
-		}
-	}
-
-	if channelName == "" {
-		channelName = "channel"
-	}
-
-	return channelName, duration, isVoice, shouldLock, createChannel, deleteChannel, messageCount, nil
 }
 
 // archiveMessages récupère les derniers messages d'un salon et les archive dans la base de données

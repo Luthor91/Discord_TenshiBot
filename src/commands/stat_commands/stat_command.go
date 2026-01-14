@@ -30,6 +30,11 @@ func StatCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	if m.Content == command {
+		showHelpMessage(s, m.ChannelID)
+		return
+	}
+
 	// Récupérer et analyser les arguments de la commande
 	parsedArgs, err := discord.ExtractArguments(m.Content, command)
 	if err != nil {
@@ -37,11 +42,7 @@ func StatCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Vérifier qu'il y a des arguments
-	if len(parsedArgs) < 1 {
-		s.ChannelMessageSend(m.ChannelID, "Veuillez spécifier une option : `-u` (utilisateur), `-s` (serveur), `-b` (bot), ou `-c` (canal).")
-		return
-	}
+
 
 	// Gère les différentes options
 	option := parsedArgs[0].Arg
@@ -54,7 +55,9 @@ func StatCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		discord.PrintBotStats(s, m)
 	case "-c":
 		discord.PrintChannelStats(s, m)
+	case "-h":
+		showHelpMessage(s, m.ChannelID)
 	default:
-		s.ChannelMessageSend(m.ChannelID, "Option inconnue. Utilisez `-u` (utilisateur), `-s` (serveur), `-b` (bot), ou `-c` (canal).")
+		return
 	}
 }

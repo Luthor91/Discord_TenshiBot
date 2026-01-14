@@ -21,10 +21,7 @@ func OnMessageInTicketChannel(s *discordgo.Session, m *discordgo.MessageCreate) 
 	}
 
 	// Supprimer le message si ce n'est pas un message valide (pas de préfixe ?report)
-	if !strings.HasPrefix(m.Content, "?report") {
-		if strings.HasPrefix(m.Content, "?") {
-			return
-		}
+	if !strings.HasPrefix(m.Content, "?report") || !strings.HasPrefix(m.Content, "?ticket") {
 		fmt.Println("[INFO] Suppression du message de ", m.Author.Username, " : message non valide")
 		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {

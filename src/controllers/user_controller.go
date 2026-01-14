@@ -78,18 +78,10 @@ func (ctrl *UserController) UpdateUser(user *models.User) error {
 }
 
 // CreateUser crée un nouvel utilisateur
-func (ctrl *UserController) CreateUser(userID, username string, affinity, money, experience int, lastDailyReward string, rank, rankMoney, rankExperience, rankAffinity int) (*models.User, error) {
+func (ctrl *UserController) CreateUser(userID, username string) (*models.User, error) {
 	user := models.User{
 		UserDiscordID:   userID,
 		Username:        username,
-		Affinity:        affinity,
-		Money:           money,
-		Experience:      experience,
-		LastDailyReward: lastDailyReward,
-		Rank:            rank,
-		RankMoney:       rankMoney,
-		RankExperience:  rankExperience,
-		RankAffinity:    rankAffinity,
 	}
 	// Utiliser FirstOrCreate pour vérifier l'existence de l'utilisateur
 	if err := ctrl.DB.Where(models.User{UserDiscordID: userID}).FirstOrCreate(&user).Error; err != nil {
@@ -140,14 +132,6 @@ func (ctrl *UserController) SaveUser(user *models.User) error {
 
 	// Mettre à jour l'utilisateur existant
 	existingUser.Username = user.Username
-	existingUser.Affinity = user.Affinity
-	existingUser.Money = user.Money
-	existingUser.Experience = user.Experience
-	existingUser.LastDailyReward = user.LastDailyReward
-	existingUser.Rank = user.Rank
-	existingUser.RankMoney = user.RankMoney
-	existingUser.RankExperience = user.RankExperience
-	existingUser.RankAffinity = user.RankAffinity
 
 	// Sauvegarder les modifications
 	return ctrl.DB.Save(&existingUser).Error
@@ -158,125 +142,6 @@ func (ctrl *UserController) DeleteUser(userID string) error {
 	return ctrl.DB.Delete(&models.User{}, "user_discord_id = ?", userID).Error
 }
 
-// GiveMoney transfère une somme d'argent d'un utilisateur à un autre
-func (ctrl *UserController) GiveMoney(fromUserID, toUserID string, moneyAmount int) error {
-	fromUser, err := ctrl.GetUserByDiscordID(fromUserID)
-	if err != nil {
-		return err
-	}
-
-	toUser, err := ctrl.GetUserByDiscordID(toUserID)
-	if err != nil {
-		return err
-	}
-
-	if fromUser.Money < moneyAmount {
-		return errors.New("not enough money to transfer")
-	}
-
-	fromUser.Money -= moneyAmount
-	toUser.Money += moneyAmount
-
-	if err := ctrl.UpdateUser(fromUser); err != nil {
-		return err
-	}
-	if err := ctrl.UpdateUser(toUser); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// GiveExperience transfère une quantité d'expérience d'un utilisateur à un autre
-func (ctrl *UserController) GiveExperience(fromUserID, toUserID string, xpAmount int) error {
-	fromUser, err := ctrl.GetUserByDiscordID(fromUserID)
-	if err != nil {
-		return err
-	}
-
-	toUser, err := ctrl.GetUserByDiscordID(toUserID)
-	if err != nil {
-		return err
-	}
-
-	fromUser.Experience -= xpAmount
-	toUser.Experience += xpAmount
-
-	if err := ctrl.UpdateUser(fromUser); err != nil {
-		return err
-	}
-	if err := ctrl.UpdateUser(toUser); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// SetMoney définit un montant d'argent pour un utilisateur
-func (ctrl *UserController) SetMoney(userID string, moneyAmount int) error {
-	user, err := ctrl.GetUserByDiscordID(userID)
-	if err != nil {
-		return err
-	}
-
-	user.Money = moneyAmount
-	return ctrl.UpdateUser(user)
-}
-
-// SetAffinity définit un montant d'affinité pour un utilisateur
-func (ctrl *UserController) SetAffinity(userID string, affinityAmount int) error {
-	user, err := ctrl.GetUserByDiscordID(userID)
-	if err != nil {
-		return err
-	}
-
-	user.Affinity = affinityAmount
-	return ctrl.UpdateUser(user)
-}
-
-// SetExperience définit un montant d'expérience pour un utilisateur
-func (ctrl *UserController) SetExperience(userID string, xpAmount int) error {
-	user, err := ctrl.GetUserByDiscordID(userID)
-	if err != nil {
-		return err
-	}
-
-	user.Experience = xpAmount
-	return ctrl.UpdateUser(user)
-}
-
-// AddAffinity met à jour le montant d'argent d'un utilisateur
-func (ctrl *UserController) AddAffinity(userID string, affinityAmount int) error {
-	user, err := ctrl.GetUserByDiscordID(userID)
-	if err != nil {
-		return err
-	}
-
-	user.Affinity += affinityAmount
-	return ctrl.UpdateUser(user)
-}
-
-// AddMoney met à jour le montant d'argent d'un utilisateur
-func (ctrl *UserController) AddMoney(userID string, moneyAmount int) error {
-	user, err := ctrl.GetUserByDiscordID(userID)
-	if err != nil {
-		return err
-	}
-
-	user.Money += moneyAmount
-	return ctrl.UpdateUser(user)
-}
-
-// AddExperience met à jour le montant d'expérience d'un utilisateur
-func (ctrl *UserController) AddExperience(userID string, xpAmount int) error {
-	user, err := ctrl.GetUserByDiscordID(userID)
-	if err != nil {
-		return err
-	}
-
-	user.Experience += xpAmount
-	return ctrl.UpdateUser(user)
-}
 
 // AddUserIfNotExists ajoute un utilisateur s'il n'existe pas déjà
 func (ctrl *UserController) AddUserIfNotExists(userID, username string) error {
@@ -285,46 +150,8 @@ func (ctrl *UserController) AddUserIfNotExists(userID, username string) error {
 		return err
 	}
 	if !exists {
-		_, err := ctrl.CreateUser(userID, username, 0, 0, 0, "", 0, 0, 0, 0)
+		_, err := ctrl.CreateUser(userID, username)
 		return err
 	}
 	return nil
-}
-
-// GetMoney récupère le montant d'argent d'un utilisateur
-func (ctrl *UserController) GetMoney(userID string) (int, error) {
-	user, err := ctrl.GetUserByDiscordID(userID)
-	if err != nil {
-		return 0, err
-	}
-	return user.Money, nil
-}
-
-// GetExperience récupère le montant d'expérience d'un utilisateur
-func (ctrl *UserController) GetExperience(userID string) (int, error) {
-	user, err := ctrl.GetUserByDiscordID(userID)
-	if err != nil {
-		return 0, err
-	}
-	return user.Experience, nil
-}
-
-// GetAffinity récupère l'affinité d'un utilisateur
-func (ctrl *UserController) GetAffinity(userID string) (int, error) {
-	user, err := ctrl.GetUserByDiscordID(userID)
-	if err != nil {
-		return 0, err
-	}
-	return user.Affinity, nil
-}
-
-// GetScore récupère le score global d'un utilisateur (argent, expérience, affinité)
-func (ctrl *UserController) GetScore(userID string) (int, error) {
-	user, err := ctrl.GetUserByDiscordID(userID)
-	if err != nil {
-		return 0, err
-	}
-	// Exemple simple de calcul de score global (peut être modifié selon ta logique)
-	totalScore := user.Money + user.Experience + user.Affinity
-	return totalScore, nil
 }

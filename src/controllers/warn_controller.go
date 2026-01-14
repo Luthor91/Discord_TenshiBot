@@ -41,10 +41,19 @@ func (wc *WarnController) GetWarnsByUserDiscordID(userDiscordID string) ([]model
 func (wc *WarnController) CountWarnsByUser(userDiscordID string) (int64, error) {
 	var count int64
 
-	// Compter le nombre de warns dans la base de données pour cet utilisateur
-	err := wc.DB.Where("user_discord_id = ?", userDiscordID).Count(&count).Error
-	return count, err
+	err := wc.DB.
+		Model(&models.Warn{}).
+		Where("user_discord_id = ?", userDiscordID).
+		Count(&count).
+		Error
+
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
+
 
 // DeleteAllWarnsByUser supprime tous les avertissements pour un utilisateur donné
 func (wc *WarnController) ResetWarns(userDiscordID string) error {

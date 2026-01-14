@@ -27,36 +27,37 @@ func NewWarnService(discordSession *discordgo.Session, guildID string) *WarnServ
 }
 
 // AddWarn ajoute un nouveau warn à un utilisateur
-func (ws *WarnService) AddWarn(userDiscordID, reason, adminID string) error {
-	// Ajouter un warn à l'utilisateur
-	err := ws.warnController.CreateWarn(userDiscordID, reason, adminID)
-	if err != nil {
-		return fmt.Errorf("erreur lors de l'ajout du warn: %v", err)
+func (ws *WarnService) AddWarn(userDiscordID, reason, adminID string) (int64, error) {
+	// Création du warn
+	if err := ws.warnController.CreateWarn(userDiscordID, reason, adminID); err != nil {
+		return 0, fmt.Errorf("erreur lors de l'ajout du warn: %v", err)
 	}
 
-	// Récupérer le nombre total de warns pour cet utilisateur
+	// Comptage
 	warnCount, err := ws.warnController.CountWarnsByUser(userDiscordID)
 	if err != nil {
-		return fmt.Errorf("erreur lors de la récupération du nombre de warns: %v", err)
+		return 0, fmt.Errorf("erreur lors de la récupération du nombre de warns: %v", err)
 	}
 
-	// Vérifier si le nombre de warns est un multiple de 3
-	if warnCount%3 == 0 {
-		// Calculer la durée du timeout en minutes (5 minutes par multiple de 3 warns)
-		timeoutDuration := time.Duration(5*(warnCount/3)) * time.Minute
+	// Timeout sur palier
+	if warnCount > 0 && warnCount%3 == 0 {
+		tier := warnCount / 3
+		timeoutDuration := time.Duration(5*tier) * time.Minute
 
-		// Appliquer un timeout à l'utilisateur sur Discord
-		err := discord.TimeoutUser(ws.discordSession, ws.guildID, userDiscordID, timeoutDuration)
-		if err != nil {
-			return fmt.Errorf("erreur lors de l'application du timeout: %v", err)
+		if err := discord.TimeoutUser(
+			ws.discordSession,
+			ws.guildID,
+			userDiscordID,
+			timeoutDuration,
+		); err != nil {
+			return warnCount, fmt.Errorf("erreur lors de l'application du timeout, la cible est administrateur.")
 		}
-
-		// Retourner une confirmation que l'utilisateur a été mis en timeout
-		fmt.Printf("L'utilisateur %s a été mis en timeout pour %v minutes en raison de %d warns.\n", userDiscordID, timeoutDuration.Minutes(), warnCount)
 	}
 
-	return nil
+	return warnCount, nil
 }
+
+
 
 // GetWarns retourne la liste des warns d'un utilisateur
 func (ws *WarnService) GetWarns(userDiscordID string) ([]models.Warn, error) {

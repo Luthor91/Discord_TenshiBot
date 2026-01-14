@@ -16,6 +16,14 @@ type Argument struct {
 	Duration time.Duration // Si applicable, la durée pour l'argument "-t"
 }
 
+type ChannelKind int
+
+const (
+	TextChannel ChannelKind = iota // 0 par défaut
+	VoiceChannel
+	AnyChannel
+)
+
 // Gérer le ciblage d'un utilisateur par son nom ou par mention
 func HandleTarget(s *discordgo.Session, m *discordgo.MessageCreate, target string) *discordgo.User {
 	// Vérifier d'abord les mentions dans le message
@@ -42,30 +50,63 @@ func HandleTarget(s *discordgo.Session, m *discordgo.MessageCreate, target strin
 	return nil
 }
 
-// HandleChannel récupère le salon à partir d'une mention ou d'un nom donné.
-func HandleChannel(s *discordgo.Session, m *discordgo.MessageCreate, target string) (*discordgo.Channel, error) {
+func HandleChannel(
+	s *discordgo.Session,
+	m *discordgo.MessageCreate,
+	target string,
+	kind ChannelKind,
+) (*discordgo.Channel, error) {
+
+	isValidType := func(t discordgo.ChannelType) bool {
+		switch kind {
+		case VoiceChannel:
+			return t == discordgo.ChannelTypeGuildVoice ||
+				t == discordgo.ChannelTypeGuildStageVoice
+		case AnyChannel:
+			return t == discordgo.ChannelTypeGuildText ||
+				t == discordgo.ChannelTypeGuildVoice ||
+				t == discordgo.ChannelTypeGuildStageVoice
+		case TextChannel:
+			fallthrough
+		default:
+			return t == discordgo.ChannelTypeGuildText
+		}
+	}
+
+	// Mention <#id>
 	if strings.HasPrefix(target, "<#") && strings.HasSuffix(target, ">") {
 		channelID := strings.TrimPrefix(strings.TrimSuffix(target, ">"), "<#")
 		channel, err := s.Channel(channelID)
 		if err != nil {
-			return nil, fmt.Errorf("Salon mentionné introuvable.")
+			return nil, fmt.Errorf("salon mentionné introuvable")
+		}
+		if !isValidType(channel.Type) {
+			return nil, fmt.Errorf("le salon mentionné n'est pas du bon type")
 		}
 		return channel, nil
 	}
-	// Si ce n'est pas une mention, on peut essayer de récupérer le salon par nom
+
+	// Recherche par nom (premier match)
 	channels, err := s.GuildChannels(m.GuildID)
 	if err != nil {
-		return nil, fmt.Errorf("Erreur lors de la récupération des salons : %s", err.Error())
+		return nil, fmt.Errorf(
+			"erreur lors de la récupération des salons : %s",
+			err.Error(),
+		)
 	}
 
 	for _, channel := range channels {
-		if channel.Name == target {
+		if channel.Name == target && isValidType(channel.Type) {
 			return channel, nil
 		}
 	}
 
-	return nil, fmt.Errorf("Salon avec le nom '%s' introuvable.", target)
+	return nil, fmt.Errorf(
+		"salon '%s' introuvable ou du mauvais type",
+		target,
+	)
 }
+
 
 // ExtractArguments récupère et valide les arguments d'un message
 // et parse la durée spécifiée avec "-t".
@@ -83,7 +124,7 @@ func ExtractArguments(content, command string) ([]Argument, error) {
 			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
 				if arg == "-t" {
 					// Si l'argument est "-t", on parse la durée
-					duration, err := parseDuration(args[i+1])
+					duration, err := ParseDuration(args[i+1])
 					if err != nil {
 						return nil, err
 					}
@@ -104,7 +145,7 @@ func ExtractArguments(content, command string) ([]Argument, error) {
 }
 
 // ParseDuration parse la durée au format '10s', '5m', '2h', '1d'
-func parseDuration(durationStr string) (time.Duration, error) {
+func ParseDuration(durationStr string) (time.Duration, error) {
 	if len(durationStr) < 2 {
 		return 0, fmt.Errorf("durée invalide")
 	}

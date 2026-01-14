@@ -27,7 +27,7 @@ func PrintMemoryUsage(intervalSeconds int) {
 	}
 }
 
-// parseDuration parse la durée au format '10s', '5m', '2h', '1d'
+// ParseDuration parse la durée au format '10s', '5m', '2h', '1d'
 func ParseDuration(durationStr string) (time.Duration, error) {
 	if len(durationStr) < 2 {
 		return 0, fmt.Errorf("durée invalide")

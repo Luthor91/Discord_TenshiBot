@@ -30,6 +30,8 @@ func OnReactionOnTicket(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 		return
 	}
 
+	fmt.Printf("[INFO] User : %s est administrateur : %t, est modérateur : %t.\n", r.UserID, isAdmin, isMod)
+
 	// Récupère l'auteur du message d'origine
 	msg, err := s.ChannelMessage(r.ChannelID, r.MessageID)
 	if err != nil {

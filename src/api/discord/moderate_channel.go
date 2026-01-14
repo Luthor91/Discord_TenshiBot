@@ -8,7 +8,7 @@ import (
 )
 
 // Créer un salon
-func CreateChannel(s *discordgo.Session, guildID, channelID, channelName string, isVoice bool, duration time.Duration) error {
+func CreateChannel(s *discordgo.Session, guildID, originChannelID, channelName string, isVoice bool, duration time.Duration) error {
 	channelType := discordgo.ChannelTypeGuildText
 	if isVoice {
 		channelType = discordgo.ChannelTypeGuildVoice
@@ -19,7 +19,7 @@ func CreateChannel(s *discordgo.Session, guildID, channelID, channelName string,
 		return err
 	}
 
-	s.ChannelMessageSend(channelID, "Salon créé : <#"+channel.ID+">")
+	s.ChannelMessageSend(originChannelID, "Salon créé : <#"+channel.ID+">")
 
 	// Si une durée est définie, supprimer le salon après cette durée
 	if duration > 0 {

@@ -4,14 +4,12 @@ import (
 	"log"
 	"strings"
 
-	"github.com/Luthor91/DiscordBot/controllers"
 	"github.com/bwmarrin/discordgo"
 )
 
 // MessageService est un service pour gérer les messages
 type MessageService struct {
 	userService     *UserService
-	affinityService *AffinityService
 	logService      *LogService
 }
 
@@ -22,23 +20,19 @@ type KeywordResponse struct {
 }
 
 var keywordResponsesWithMention = []KeywordResponse{
-	{Keyword: "help", Response: "Je suis ici pour t'aider !", Reaction: "✅"},
 	// Ajoutez d'autres mots-clés qui nécessitent une mention
 }
 
 var keywordResponsesWithoutMention = []KeywordResponse{
 	{Keyword: "bonjour", Response: "Salut à toi !", Reaction: "👋"},
 	{Keyword: "merci", Response: "De rien !", Reaction: "😊"},
-	{Keyword: "aide", Response: "Voici comment je peux t'aider...", Reaction: "❓"},
-	{Keyword: "gg", Response: "", Reaction: "👏"},                   // Juste une réaction
-	{Keyword: "lol", Response: "Haha, très drôle !", Reaction: ""}, // Juste une réponse
+	{Keyword: "gg", Response: "", Reaction: "👏"},
 }
 
 // NewMessageService crée une nouvelle instance de MessageService
-func NewMessageService(userService *UserService, affinityService *AffinityService, logService *LogService) *MessageService {
+func NewMessageService(userService *UserService, logService *LogService) *MessageService {
 	return &MessageService{
 		userService:     userService,
-		affinityService: affinityService,
 		logService:      logService,
 	}
 }
@@ -54,19 +48,6 @@ func (service *MessageService) NewServerMessage(discord *discordgo.Session, mess
 		log.Printf("Erreur lors de l'ajout de l'utilisateur : %v", err)
 		return
 	}
-
-	user, err := controllers.NewUserController().GetUserByDiscordID(message.Author.ID)
-	if err != nil {
-		log.Printf("Erreur lors de la récupération de l'utilisateur : %v", err)
-		return
-	}
-
-	if err := service.userService.AddExperience(user.UserDiscordID, 1); err != nil {
-		log.Printf("Erreur lors de l'ajout de l'expérience : %v", err)
-		return
-	}
-
-	service.affinityService.AdjustAffinity(user.UserDiscordID, message)
 
 	// Vérifier si le bot est mentionné
 	if len(message.Mentions) > 0 {

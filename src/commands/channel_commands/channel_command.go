@@ -52,13 +52,6 @@ func ChannelCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Analyser les arguments extraits
 	for _, arg := range parsedArgs {
 		switch arg.Arg {
-		case "-n":
-			var handleErr error
-			channel, handleErr = discord.HandleChannel(s, m, arg.Value)
-			if handleErr != nil {
-				s.ChannelMessageSend(m.ChannelID, handleErr.Error())
-				return
-			}
 		case "-t":
 			duration = arg.Duration
 		case "-v":
@@ -74,28 +67,27 @@ func ChannelCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			if parseErr == nil {
 				archiveMessagesCount = archiveMessagesCountValue
 			}
-		default:
+		case "-h":
 			showHelpMessage(s, m.ChannelID)
+		default:
 			return
 		}
 	}
 
-	// Créer un salon si l'option -c est présente
-	if createChannelFlag {
-		// Vérifiez que le canal est bien mentionné
-		if channel == nil {
-			s.ChannelMessageSend(m.ChannelID, "Veuillez spécifier un nom de salon valide.")
-			return
-		}
+	// Récupérer le salon spécifié
+	parts := strings.Fields(m.Content)
+	specifiedChannel := parts[len(parts)-1]
+	channel, _ = discord.HandleChannel(s, m, specifiedChannel, discord.AnyChannel)
 
-		err := discord.CreateChannel(s, m.GuildID, channel.ID, channel.Name, isVoice, duration)
+	
+	if createChannelFlag && specifiedChannel != "" {
+		err := discord.CreateChannel(s, m.GuildID, m.ChannelID, specifiedChannel, isVoice, duration)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Erreur lors de la création du salon : "+err.Error())
 		}
 	}
 
-	// Supprimer un salon si l'option -d est présente
-	if deleteChannelFlag {
+	if deleteChannelFlag && channel != nil {
 		err := discord.DeleteChannel(s, m.GuildID, channel.ID, channel.Name)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Erreur lors de la suppression du salon : "+err.Error())
@@ -103,7 +95,7 @@ func ChannelCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Verrouiller ou déverrouiller un salon si l'option -l est présente
-	if shouldLock {
+	if shouldLock && channel != nil {
 		err := discord.HandleChannelLock(s, m, channel.ID, duration)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Erreur lors de la gestion du verrouillage du salon : "+err.Error())
@@ -111,7 +103,7 @@ func ChannelCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Archive messages si l'option -a est présente
-	if archiveMessagesCount > 0 {
+	if archiveMessagesCount > 0 && channel != nil {
 		err := archiveMessages(s, m, archiveMessagesCount)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Erreur lors de l'archivage des messages : "+err.Error())

@@ -32,6 +32,11 @@ func LogsCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	if m.Content == command {
+		showHelpMessage(s, m.ChannelID)
+		return
+	}
+	
 	// Extraire les arguments après la commande
 	args := strings.Fields(m.Content)
 	if len(args) < 2 {
@@ -64,6 +69,9 @@ func LogsCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 					channelID = strings.Trim(channelID, "<#>")
 				}
 			}
+		case "-h":
+			showHelpMessage(s, m.ChannelID)
+			return
 		}
 	}
 

@@ -8,15 +8,42 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// timeoutUser met un utilisateur en timeout pour une durée donnée
-func TimeoutUser(s *discordgo.Session, guildID, userID string, duration time.Duration) error {
-	timeoutUntil := time.Now().Add(duration)
-	err := s.GuildMemberTimeout(guildID, userID, &timeoutUntil)
-	if err != nil {
-		return err
+func TimeoutUser(
+	s *discordgo.Session,
+	guildID,
+	userID string,
+	duration time.Duration,
+) error {
+
+	if duration <= 0 {
+		return fmt.Errorf("durée de timeout invalide")
 	}
-	return nil
+
+	member, err := s.GuildMember(guildID, userID)
+	if err != nil {
+		return fmt.Errorf("impossible de récupérer le membre: %v", err)
+	}
+
+	// Si un timeout est déjà actif, on n’écrase pas
+	if member.CommunicationDisabledUntil != nil &&
+		member.CommunicationDisabledUntil.After(time.Now()) {
+		return nil
+	}
+
+	timeoutUntil := time.Now().UTC().Add(duration)
+
+	// Limite Discord : 28 jours
+	if timeoutUntil.After(time.Now().Add(28 * 24 * time.Hour)) {
+		return fmt.Errorf("timeout trop long (max 28 jours)")
+	}
+
+	return s.GuildMemberTimeout(
+		guildID,
+		userID,
+		&timeoutUntil,
+	)
 }
+
 
 // Helper functions for action handling
 func BanUser(s *discordgo.Session, m *discordgo.MessageCreate, userID, reason string) {

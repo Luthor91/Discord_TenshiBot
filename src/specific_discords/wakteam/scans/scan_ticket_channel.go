@@ -49,7 +49,7 @@ func ScanAndProcessTicketChannel(s *discordgo.Session) {
 		}
 
 		// Vérifier si le message commence par "?report"
-		if !strings.HasPrefix(msg.Content, "?report") {
+		if !strings.HasPrefix(msg.Content, "?report") || !strings.HasPrefix(msg.Content, "?ticket") {
 			log.Printf("[INFO] Suppression du message ID: %s | Auteur: %s | Contenu: %s\n", msg.ID, msg.Author.ID, msg.Content)
 			err := s.ChannelMessageDelete(channelID, msg.ID)
 			if err != nil {
