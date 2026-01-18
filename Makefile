@@ -47,7 +47,7 @@ show_db_name:
 # Creation de la base de donnees
 create_db: show_db_name
 	@echo "Creation de la base de donnees : $(DB_NAME)"
-	@$(PSQL) -U postgres -c "CREATE DATABASE $(DB_NAME);"
+	@sudo -u postgres $(PSQL) -c "CREATE DATABASE $(DB_NAME);"
 	@echo "Base de donnees $(DB_NAME) creee avec succes."
 
 # Suppression de la base de donnees
