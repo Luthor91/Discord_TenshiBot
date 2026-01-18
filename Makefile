@@ -20,12 +20,25 @@ EXEC := $(PROJECT_DIR)/Bot_Tenshi
 EXT := $(if $(findstring Windows_NT,$(OS)),.exe,)
 BUILD_CMD := go build -o $(EXEC)$(EXT)
 RUN_CMD := $(EXEC)$(EXT)
+TMUX_SESSION := discordbot
 
 # Charger les variables d'environnement depuis .env (si present)
 ifneq (,$(wildcard $(PROJECT_DIR)/.env))
   include $(PROJECT_DIR)/.env
   export
 endif
+
+run-bg:
+	@tmux has-session -t $(TMUX_SESSION) 2>/dev/null || \
+	tmux new-session -d -s $(TMUX_SESSION) "cd $(PROJECT_DIR) && $(RUN_CMD)"
+	@echo "Bot lancé dans tmux ($(TMUX_SESSION))"
+
+attach:
+	@tmux attach -t $(TMUX_SESSION)
+
+stop:
+	@tmux kill-session -t $(TMUX_SESSION) || true
+	@echo "Bot arrêté"
 
 # Affichage de la base de données utilisée
 show_db_name:
@@ -81,6 +94,6 @@ reboot: clean delete_db create_db setup build run
 # Cible pour preparer, construire et executer sans rien detruire
 exec: setup build run
 
-deploy: create_db exec
+deploy: create_db setup build run-bg
 
 .PHONY: show_db_name create_db delete_db setup build run clean reboot exec deploy
