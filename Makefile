@@ -1,3 +1,8 @@
+# TARGET PRINCIPALES
+# make exec pour exécution locale
+# make deploy pour exécution distante
+# make setup pour la première initialisation
+
 # Detection de l'OS (Windows ou Linux)
 ifeq ($(OS),Windows_NT)
     RM = powershell.exe -Command "Remove-Item -Force -ErrorAction Ignore"
@@ -57,7 +62,7 @@ delete_db: show_db_name
 	@echo "Base de donnees $(DB_NAME) supprimee avec succes."
 
 # Preparation des modules Go
-setup:
+setup: create_db
 ifeq ($(OS),Windows_NT)
 	@cd $(PROJECT_DIR); go env -w GOPROXY=https://proxy.golang.org,direct; go mod tidy
 else
@@ -92,8 +97,8 @@ endif
 reboot: clean delete_db create_db setup build run
 
 # Cible pour preparer, construire et executer sans rien detruire
-exec: setup build run
+exec: build run
 
-deploy: create_db setup build run-bg
+deploy: build run-bg
 
 .PHONY: show_db_name create_db delete_db setup build run clean reboot exec deploy
