@@ -22,13 +22,14 @@ func TimeoutCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	command := config.AppConfig.BotPrefix + "timeout"
+	aliasCommand := config.AppConfig.BotPrefix + "to"
 
-	if !strings.HasPrefix(m.Content, command) {
+	if !strings.HasPrefix(m.Content, command) && !strings.HasPrefix(m.Content, aliasCommand) {
 		return
 	}
 
 	// ?timeout
-	if m.Content == command {
+	if m.Content == command || m.Content == aliasCommand {
 		showHelpMessage(s, m.ChannelID)
 		return
 	}
