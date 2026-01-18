@@ -71,7 +71,7 @@ func TimeoutCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		m.ChannelID,
 		fmt.Sprintf(
 			"Utilisateur %s timeout %v : %s",
-			target.Username,
+			parts[1],
 			duration,
 			reason,
 		),

@@ -54,6 +54,6 @@ func KickCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	s.ChannelMessageSend(
 		m.ChannelID,
-		fmt.Sprintf("Utilisateur %s expulsé : %s", target.Username, reason),
+		fmt.Sprintf("Utilisateur %s expulsé : %s", parts[1], reason),
 	)
 }

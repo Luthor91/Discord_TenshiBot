@@ -62,7 +62,7 @@ func DeafenCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		m.ChannelID,
 		fmt.Sprintf(
 			"Utilisateur %s rendu sourd pour %v : %s",
-			target.Username,
+			parts[1],
 			duration,
 			reason,
 		),

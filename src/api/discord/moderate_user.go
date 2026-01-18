@@ -50,8 +50,6 @@ func BanUser(s *discordgo.Session, m *discordgo.MessageCreate, userID, reason st
 	err := s.GuildBanCreateWithReason(m.GuildID, userID, reason, 0)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Erreur lors du bannissement de l'utilisateur.")
-	} else {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Utilisateur %s banni avec succès.", userID))
 	}
 }
 
@@ -59,8 +57,6 @@ func KickUser(s *discordgo.Session, m *discordgo.MessageCreate, userID, reason s
 	err := s.GuildMemberDeleteWithReason(m.GuildID, userID, reason)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Erreur lors du kick de l'utilisateur.")
-	} else {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Utilisateur %s kické avec succès.", userID))
 	}
 }
 
@@ -70,8 +66,6 @@ func MuteUser(s *discordgo.Session, m *discordgo.MessageCreate, userID string, d
 		s.ChannelMessageSend(m.ChannelID, "Erreur lors du mute de l'utilisateur.")
 		return
 	}
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Utilisateur %s mute pour %s : %s", userID, duration.String(), reason))
-	// Optionally, schedule unmute after duration
 	time.AfterFunc(duration, func() {
 		s.GuildMemberMute(m.GuildID, userID, false)
 	})
@@ -83,8 +77,6 @@ func DeafenUser(s *discordgo.Session, m *discordgo.MessageCreate, userID string,
 		s.ChannelMessageSend(m.ChannelID, "Erreur lors du deafen de l'utilisateur.")
 		return
 	}
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Utilisateur %s deafen pour %s : %s", userID, duration.String(), reason))
-	// Optionally, schedule undeafen after duration
 	time.AfterFunc(duration, func() {
 		s.GuildMemberDeafen(m.GuildID, userID, false)
 	})
@@ -94,8 +86,6 @@ func MoveUser(s *discordgo.Session, m *discordgo.MessageCreate, userID, targetCh
 	err := s.GuildMemberMove(m.GuildID, userID, &targetChannel)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Erreur lors du déplacement de l'utilisateur.")
-	} else {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Utilisateur %s déplacé avec succès.", userID))
 	}
 }
 

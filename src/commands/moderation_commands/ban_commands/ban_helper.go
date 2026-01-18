@@ -6,7 +6,7 @@ import "github.com/bwmarrin/discordgo"
 func showHelpMessage(s *discordgo.Session, channelID string) {
 	msg := "" +
 		"**Commande : bannissement (`?ban`)**\n\n" +
-
+		"Banni définitivement un utilisateur du serveur. Ne peut être débanni que depuis les paramètres du serveur\n\n" +
 		"**Usage :**\n" +
 		"`?ban <utilisateur> [raison]`\n\n" +
 

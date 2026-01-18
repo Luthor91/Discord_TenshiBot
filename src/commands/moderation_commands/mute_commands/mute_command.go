@@ -62,7 +62,7 @@ func MuteCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		m.ChannelID,
 		fmt.Sprintf(
 			"Utilisateur %s mute pour %v : %s",
-			target.Username,
+			parts[1],
 			duration,
 			reason,
 		),

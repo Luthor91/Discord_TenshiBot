@@ -54,7 +54,7 @@ func BanCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	s.ChannelMessageSend(
 		m.ChannelID,
-		fmt.Sprintf("Utilisateur %s banni : %s", target.Username, reason),
+		fmt.Sprintf("Utilisateur %s banni : %s", parts[1], reason),
 	)
 }
 
