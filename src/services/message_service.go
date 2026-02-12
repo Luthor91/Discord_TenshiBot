@@ -20,13 +20,17 @@ type KeywordResponse struct {
 }
 
 var keywordResponsesWithMention = []KeywordResponse{
-	// Ajoutez d'autres mots-clés qui nécessitent une mention
+	{Keyword: "luthor", Response: "Oui c'est moi"},
 }
 
+
 var keywordResponsesWithoutMention = []KeywordResponse{
-	{Keyword: "bonjour", Response: "Salut à toi !", Reaction: "👋"},
-	{Keyword: "merci", Response: "De rien !", Reaction: "😊"},
+	{Keyword: "bonjour", Response: "", Reaction: "👋"},
+	{Keyword: "salut", Response: "", Reaction: "👋"},
+	{Keyword: "gentil bot", Response: "", Reaction: "😳"},
+	{Keyword: "good bot", Response: "", Reaction: "😳"},
 	{Keyword: "gg", Response: "", Reaction: "👏"},
+	{Keyword: "belle bite", Response: "", Reaction: "👑"},
 }
 
 // NewMessageService crée une nouvelle instance de MessageService
