@@ -20,17 +20,21 @@ type KeywordResponse struct {
 }
 
 var keywordResponsesWithMention = []KeywordResponse{
-	{Keyword: "luthor", Response: "Oui c'est moi"},
+	{Keyword: "gentil bot", Reaction: "😳"},
+	{Keyword: "good bot", Response: "", Reaction: "😳"},
+	{Keyword: "salut", Response: "Salut !", Reaction: "👋"},
+	{Keyword: "bonjour", Response: "Bonjour !", Reaction: "👋"},
+	{Keyword: "hey", Response: "Hey !", Reaction: "👋"},
+
 }
 
 
 var keywordResponsesWithoutMention = []KeywordResponse{
-	{Keyword: "bonjour", Response: "", Reaction: "👋"},
-	{Keyword: "salut", Response: "", Reaction: "👋"},
-	{Keyword: "gentil bot", Response: "", Reaction: "😳"},
-	{Keyword: "good bot", Response: "", Reaction: "😳"},
+	{Keyword: "ntm", Response: "", Reaction: "😠"},
 	{Keyword: "gg", Response: "", Reaction: "👏"},
 	{Keyword: "belle bite", Response: "", Reaction: "👑"},
+	{Keyword: "luthor", Response: "Oui c'est moi"},
+	
 }
 
 // NewMessageService crée une nouvelle instance de MessageService
