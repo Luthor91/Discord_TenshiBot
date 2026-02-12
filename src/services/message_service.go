@@ -2,6 +2,7 @@ package services
 
 import (
 	"log"
+	"regexp"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -25,7 +26,6 @@ var keywordResponsesWithMention = []KeywordResponse{
 	{Keyword: "salut", Response: "Salut !", Reaction: "👋"},
 	{Keyword: "bonjour", Response: "Bonjour !", Reaction: "👋"},
 	{Keyword: "hey", Response: "Hey !", Reaction: "👋"},
-
 }
 
 
@@ -95,7 +95,14 @@ func (service *MessageService) handleKeywordResponses(discord *discordgo.Session
 	}
 
 	for _, keywordResponse := range keywordResponses {
-		if strings.Contains(content, keywordResponse.Keyword) {
+		pattern := `\b` + regexp.QuoteMeta(keywordResponse.Keyword) + `\b`
+		matched, err := regexp.MatchString(pattern, content)
+		if err != nil {
+			log.Printf("Erreur regex : %v", err)
+			continue
+		}
+
+		if matched {
 			// Envoyer la réponse si elle n'est pas vide
 			if keywordResponse.Response != "" {
 				_, err := discord.ChannelMessageSend(message.ChannelID, keywordResponse.Response)
@@ -112,8 +119,8 @@ func (service *MessageService) handleKeywordResponses(discord *discordgo.Session
 				}
 			}
 
-			// Sortir de la boucle une fois que le mot-clé est trouvé
 			return
 		}
 	}
+
 }
