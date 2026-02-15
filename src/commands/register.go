@@ -12,6 +12,7 @@ import (
 	"github.com/Luthor91/DiscordBot/commands/moderation_commands/mute_commands"
 	"github.com/Luthor91/DiscordBot/commands/moderation_commands/timeout_commands"
 	"github.com/Luthor91/DiscordBot/commands/moderation_commands/warn_commands"
+	"github.com/Luthor91/DiscordBot/commands/reaction_role_commands"
 	"github.com/Luthor91/DiscordBot/commands/stat_commands"
 	"github.com/Luthor91/DiscordBot/commands/utility_commands"
 	"github.com/Luthor91/DiscordBot/services"
@@ -69,6 +70,10 @@ func RegisterHandlers(discord *discordgo.Session) {
 	discord.AddHandler(stat_commands.StatCommand)
 
 	// Handler spécifiques, Wakteam
+	discord.AddHandler(reaction_role_commands.ReactionRoleCommand)
+	discord.AddHandler(reaction_role_commands.OnReactionAdd)
+
+
 	discord.AddHandler(moderation.OnMessageInTicketChannel)
 	discord.AddHandler(moderation.OnReactionOnTicket)
 

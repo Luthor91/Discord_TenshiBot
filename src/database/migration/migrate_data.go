@@ -16,6 +16,7 @@ func MigrateAllPostgresql(db *gorm.DB) {
 		&models.Log{},
 		&models.BadWord{},
 		&models.Warn{},
+		&models.ReactionRole{},
 	)
 	if err != nil {
 		log.Fatalf("Error migrating the database schema: %v", err)
